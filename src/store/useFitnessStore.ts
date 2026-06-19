@@ -7,8 +7,7 @@ import {
   addDoc, 
   deleteDoc, 
   doc, 
-  updateDoc,
-  orderBy
+  updateDoc
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Workout, BodyWeight, PersonalRecord } from '../types';
