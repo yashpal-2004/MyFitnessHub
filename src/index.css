@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#f0f2f5] text-slate-800 antialiased font-sans selection:bg-primary-100 selection:text-primary-900;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+}
+
+/* Premium smooth transitions */
+.smooth-transition {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+/* Theme Utilities */
+.glass-card {
+  @apply bg-white/70 backdrop-blur-md border border-white/50 shadow-glass rounded-2xl;
+}
+
+.neu-card {
+  @apply bg-[#f0f2f5] rounded-2xl shadow-neu-outset border border-white/80;
+}
+
+.neu-card-inset {
+  @apply bg-[#ebedf0] rounded-2xl shadow-neu-inset border border-slate-200/40;
+}
+
+.neu-input {
+  @apply bg-[#e8ebf0] rounded-xl shadow-neu-inset border border-slate-300/30 px-4 py-2.5 outline-none focus:border-primary-300 transition-all duration-200 text-slate-800 placeholder-slate-400;
+}
+
+.neu-input-search {
+  @apply bg-[#e8ebf0] rounded-xl shadow-neu-inset border border-slate-300/30 pl-10 pr-4 py-2.5 outline-none focus:border-primary-300 transition-all duration-200 text-slate-800 placeholder-slate-400;
+}
+
+.skeuo-btn-orange {
+  @apply bg-gradient-to-b from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 active:from-orange-600 active:to-orange-700 text-white font-semibold shadow-skeuo-button active:shadow-skeuo-button-active border border-orange-500/80 rounded-xl transition-all duration-150;
+}
+
+.skeuo-btn-dark {
+  @apply bg-gradient-to-b from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 active:from-slate-900 active:to-black text-white font-medium shadow-skeuo-button active:shadow-skeuo-button-active border border-slate-800/80 rounded-xl transition-all duration-150;
+}
+
+.skeuo-btn-light {
+  @apply bg-gradient-to-b from-white to-slate-100 hover:from-slate-50 hover:to-slate-200 active:from-slate-200 active:to-slate-300 text-slate-700 font-medium shadow-skeuo-button active:shadow-skeuo-button-active border border-slate-200/80 rounded-xl transition-all duration-150;
+}
+
