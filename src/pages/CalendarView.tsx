@@ -67,12 +67,21 @@ export const CalendarView: React.FC = () => {
     return d.getMonth() === month && d.getFullYear() === year;
   }).length;
 
-  const monthActiveDays = Object.keys(workoutsByDate).filter(dateStr => {
+  let sundaysCount = 0;
+  for (let d = 1; d <= totalDays; d++) {
+    if (new Date(year, month, d).getDay() === 0) {
+      sundaysCount++;
+    }
+  }
+
+  const monthActiveDaysForUI = Object.keys(workoutsByDate).filter(dateStr => {
     const d = new Date(dateStr);
-    return d.getMonth() === month && d.getFullYear() === year;
+    return d.getMonth() === month && d.getFullYear() === year && d.getDay() !== 0;
   }).length;
 
-  const getDayClass = (day: number | null, dateStr: string) => {
+  const restDaysForUI = totalDays - sundaysCount - monthActiveDaysForUI;
+
+  const getDayClass = (day: number | null, dateStr: string, isSunday: boolean) => {
     if (!day) return 'invisible';
     const isSelected = dateStr === selectedDateStr;
     const hasWorkout = workoutsByDate[dateStr]?.length > 0;
@@ -82,6 +91,8 @@ export const CalendarView: React.FC = () => {
       cls += 'shadow-neu-inset bg-[#d8dce2] text-primary-700 border-slate-300/40 ';
     } else if (hasWorkout) {
       cls += 'bg-[#e0eaf5] text-primary-600 shadow-neu-outset-sm border-white/60 hover:bg-[#d6e3f0] ';
+    } else if (isSunday) {
+      cls += 'bg-slate-200/40 text-slate-400 border-dashed border-slate-300 hover:bg-slate-200/60 ';
     } else {
       cls += 'text-slate-700 hover:shadow-neu-outset-sm hover:bg-[#ebedf0] border-transparent ';
     }
@@ -119,7 +130,7 @@ export const CalendarView: React.FC = () => {
             </div>
             <div>
               <span className="text-xs font-semibold text-slate-400 block uppercase tracking-wider">Active Training Days</span>
-              <span className="text-xl font-extrabold text-slate-800">{monthActiveDays} active / {totalDays - monthActiveDays} rest</span>
+              <span className="text-xl font-extrabold text-slate-800">{monthActiveDaysForUI} active / {restDaysForUI} rest</span>
             </div>
           </div>
         </div>
@@ -153,15 +164,19 @@ export const CalendarView: React.FC = () => {
                   ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                   : '';
                 const hasWorkout = day ? workoutsByDate[dateStr]?.length > 0 : false;
+                const isSunday = idx % 7 === 0;
 
                 return (
                   <div key={idx} className="flex justify-center items-center">
                     {day ? (
                       <button
                         onClick={() => setSelectedDateStr(dateStr)}
-                        className={getDayClass(day, dateStr)}
+                        className={getDayClass(day, dateStr, isSunday)}
                       >
                         {day}
+                        {isSunday && !hasWorkout && (
+                          <span className="text-[7px] leading-[7px] text-slate-400 font-extrabold uppercase mt-0.5 tracking-tighter">REST</span>
+                        )}
                         {hasWorkout && dateStr !== selectedDateStr && (
                           <span className="absolute bottom-1 w-1.5 h-1.5 bg-primary-500 rounded-full" />
                         )}

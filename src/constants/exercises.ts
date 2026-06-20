@@ -1432,38 +1432,6 @@ export const EXERCISES: ExerciseWithImage[] = [
     "image": "/exercises/squat.png"
   },
   {
-    "id": "dumbbell-shrugs",
-    "name": "Dumbbell Shrugs",
-    "category": "Back",
-    "primaryMuscle": "Trapezius",
-    "secondaryMuscles": [],
-    "equipment": "Dumbbells",
-    "difficulty": "Beginner",
-    "instructions": [
-      "Perform shrugs holding dumbbells at sides."
-    ],
-    "commonMistakes": [
-      "Using arms to lift"
-    ],
-    "image": "/exercises/dumbbell-shrugs.png"
-  },
-  {
-    "id": "barbell-shrug",
-    "name": "Barbell Shrug",
-    "category": "Back",
-    "primaryMuscle": "Trapezius",
-    "secondaryMuscles": [],
-    "equipment": "Barbell",
-    "difficulty": "Beginner",
-    "instructions": [
-      "Stand holding barbell, lift shoulders up to ears."
-    ],
-    "commonMistakes": [
-      "Rolling shoulders (causes neck strain)"
-    ],
-    "image": "/exercises/barbell-shrug.png"
-  },
-  {
     "id": "leg-press",
     "name": "Leg Press",
     "category": "Legs",
@@ -2363,5 +2331,47 @@ export const EXERCISES: ExerciseWithImage[] = [
       "Lifting heels"
     ],
     "image": "/exercises/squat-sit-to-reach.png"
+  },
+  {
+    "id": "dumbbell-shrug",
+    "name": "Dumbbell Shrug",
+    "category": "Shoulders",
+    "primaryMuscle": "Trapezius",
+    "secondaryMuscles": [
+      "Upper Back"
+    ],
+    "equipment": "Dumbbells",
+    "difficulty": "Beginner",
+    "instructions": [
+      "Stand straight holding dumbbells at your sides with a neutral grip.",
+      "Keep your arms straight and shrug your shoulders as high as possible.",
+      "Hold the contraction at the top for a second, then lower slowly."
+    ],
+    "commonMistakes": [
+      "Rolling the shoulders in a circle",
+      "Using the biceps to pull the weight"
+    ],
+    "image": "/exercises/dumbbell-shrugs.png"
+  },
+  {
+    "id": "barbell-shrug",
+    "name": "Barbell Shrug",
+    "category": "Shoulders",
+    "primaryMuscle": "Trapezius",
+    "secondaryMuscles": [
+      "Upper Back"
+    ],
+    "equipment": "Barbell",
+    "difficulty": "Beginner",
+    "instructions": [
+      "Stand straight holding a barbell in front of your thighs with an overhand grip.",
+      "Keep your arms straight and shrug your shoulders straight up toward your ears.",
+      "Squeeze at the top, then lower with control."
+    ],
+    "commonMistakes": [
+      "Rolling the shoulders",
+      "Bending the elbows"
+    ],
+    "image": "/exercises/barbell-shrug.png"
   }
 ];

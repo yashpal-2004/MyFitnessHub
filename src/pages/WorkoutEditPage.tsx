@@ -19,6 +19,7 @@ import {
 
 interface WorkoutFormInput {
   name: string;
+  date: string;
   durationMinutes: number;
   notes?: string;
   exercises: {
@@ -47,6 +48,7 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
   const { register, control, handleSubmit } = useForm<WorkoutFormInput>({
     defaultValues: {
       name: workout.name,
+      date: workout.date,
       durationMinutes: workout.durationMinutes,
       notes: workout.notes || '',
       exercises: workout.exercises.map(ex => ({
@@ -67,9 +69,12 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
     name: 'exercises',
   });
 
+  const addedExerciseIds = exerciseFields.map(field => field.exerciseId);
   const filteredExercisesList = EXERCISES.filter(ex =>
-    ex.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
-    ex.category.toLowerCase().includes(exerciseSearch.toLowerCase())
+    !addedExerciseIds.includes(ex.id) && (
+      ex.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
+      ex.category.toLowerCase().includes(exerciseSearch.toLowerCase())
+    )
   );
 
   const handleSelectExercise = (exerciseId: string, exerciseName: string) => {
@@ -87,7 +92,7 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
     try {
       const updates = {
         name: data.name,
-        date: workout.date,
+        date: data.date,
         durationMinutes: Number(data.durationMinutes),
         notes: data.notes || '',
         clientId: workout.clientId,
@@ -141,13 +146,23 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
           {/* Main Info */}
           <div className="neu-card p-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
+              <div>
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                   Workout Name
                 </label>
                 <input
                   type="text"
                   {...register('name', { required: true })}
+                  className="w-full neu-input focus:ring-1 focus:ring-primary-500/20"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                  Workout Date
+                </label>
+                <input
+                  type="date"
+                  {...register('date', { required: true })}
                   className="w-full neu-input focus:ring-1 focus:ring-primary-500/20"
                 />
               </div>
@@ -251,11 +266,29 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
                     key={ex.id}
                     type="button"
                     onClick={() => handleSelectExercise(ex.id, ex.name)}
-                    className="w-full text-left px-4 py-3 hover:bg-slate-100/50 rounded-xl transition-colors flex items-center justify-between"
+                    className="w-full text-left px-4 py-3 hover:bg-slate-100/50 rounded-xl transition-colors flex items-center justify-between gap-3"
                   >
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-sm">{ex.name}</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">{ex.category} &middot; {ex.primaryMuscle}</p>
+                    <div className="flex items-center gap-3">
+                      {ex.image ? (
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200/50 flex items-center justify-center">
+                          <img
+                            src={ex.image}
+                            alt={ex.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-[#e8ebf0] flex-shrink-0 flex items-center justify-center text-primary-500 border border-slate-200/50">
+                          <Dumbbell className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-sm">{ex.name}</h4>
+                        <p className="text-xs text-slate-400 mt-0.5">{ex.category} &middot; {ex.primaryMuscle}</p>
+                      </div>
                     </div>
                     <Plus className="w-4 h-4 text-slate-400" />
                   </button>

@@ -151,23 +151,33 @@ export const ExerciseLibrary: React.FC = () => {
         {/* Search and Filter Row */}
         <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
           {/* Tabs */}
-          <div className="neu-card-inset flex gap-1.5 p-1.5 overflow-x-auto scrollbar-none max-w-full md:max-w-xl">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => {
-                  setSelectedCategory(cat);
-                  setSearchQuery('');
-                }}
-                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-150 whitespace-nowrap ${
-                  selectedCategory === cat
-                    ? 'shadow-neu-inset bg-[#d8dce2] text-primary-700'
-                    : 'text-slate-500 hover:text-slate-800 hover:bg-[#ebedf0]/50'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="neu-card-inset flex gap-1.5 p-1.5 overflow-x-auto scrollbar-none max-w-full md:max-w-3xl">
+            {categories.map((cat) => {
+              const total = EXERCISES.filter(ex => ex.category === cat).length;
+              const filtered = EXERCISES.filter(ex => 
+                ex.category === cat && 
+                (ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                 ex.primaryMuscle.toLowerCase().includes(searchQuery.toLowerCase()))
+              ).length;
+
+              const countText = searchQuery ? `${filtered}/${total}` : `${total}`;
+
+              return (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                  }}
+                  className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-150 whitespace-nowrap ${
+                    selectedCategory === cat
+                      ? 'shadow-neu-inset bg-[#d8dce2] text-primary-700'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-[#ebedf0]/50'
+                  }`}
+                >
+                  {cat} <span className="text-xs opacity-60 ml-1">({countText})</span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Search bar */}
