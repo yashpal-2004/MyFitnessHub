@@ -212,7 +212,7 @@ export const ExerciseLibrary: React.FC = () => {
                     <img 
                       src={ex.image} 
                       alt={ex.name} 
-                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300"
+                      className="w-full h-full object-contain p-2 group-hover:scale-[1.03] transition-all duration-300"
                       loading="lazy"
                     />
                   </div>

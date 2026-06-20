@@ -54,6 +54,13 @@ export const WeightTracker: React.FC = () => {
     initialize();
   }, [initialize]);
 
+  // Default the weight input to the most recent logged weight once bodyWeights load
+  useEffect(() => {
+    if (bodyWeights.length > 0 && !editingEntry) {
+      setValue('weight', bodyWeights[0].weight);
+    }
+  }, [bodyWeights, setValue, editingEntry]);
+
   // Calculations for trend analysis
   const recentWeights = [...bodyWeights].reverse(); // oldest to newest for charts
   
@@ -80,14 +87,15 @@ export const WeightTracker: React.FC = () => {
   const latestWeight = bodyWeights.length > 0 ? bodyWeights[0].weight : null;
 
   const onSubmit = async (data: WeightFormInput) => {
+    const enteredWeight = Number(data.weight);
     if (editingEntry) {
-      await editWeight(editingEntry.id, Number(data.weight), data.date, data.notes);
+      await editWeight(editingEntry.id, enteredWeight, data.date, data.notes);
       setEditingEntry(null);
     } else {
-      await addWeight(Number(data.weight), data.date, data.notes);
+      await addWeight(enteredWeight, data.date, data.notes);
     }
     reset({
-      weight: latestWeight || 70,
+      weight: enteredWeight,
       date: new Date().toISOString().split('T')[0],
       notes: ''
     });

@@ -15,6 +15,7 @@ import {
   Clipboard,
   X,
   ArrowLeft,
+  Check,
 } from 'lucide-react';
 
 interface WorkoutFormInput {
@@ -22,6 +23,7 @@ interface WorkoutFormInput {
   date: string;
   durationMinutes: number;
   notes?: string;
+  categories: string[];
   exercises: {
     exerciseId: string;
     exerciseName: string;
@@ -43,14 +45,19 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
   const { editWorkout } = useFitnessStore();
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [tempSelectedExercises, setTempSelectedExercises] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const { register, control, handleSubmit } = useForm<WorkoutFormInput>({
+  const categories = ['Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps'] as const;
+
+  const { register, control, handleSubmit, watch, setValue } = useForm<WorkoutFormInput>({
     defaultValues: {
       name: workout.name,
       date: workout.date,
       durationMinutes: workout.durationMinutes,
       notes: workout.notes || '',
+      categories: workout.categories || [],
       exercises: workout.exercises.map(ex => ({
         exerciseId: ex.exerciseId,
         exerciseName: ex.exerciseName,
@@ -64,23 +71,54 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
     },
   });
 
+  const watchedCategories = watch('categories');
+  const watchedDate = watch('date');
+
+  React.useEffect(() => {
+    const catsStr = watchedCategories && watchedCategories.length > 0
+      ? `${watchedCategories.join(' & ')} Day`
+      : 'Workout';
+    
+    let dateStr = '';
+    if (watchedDate) {
+      const [year, month, day] = watchedDate.split('-').map(Number);
+      if (year && month && day) {
+        const dateObj = new Date(year, month - 1, day);
+        dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+    }
+    
+    if (!dateStr) {
+      dateStr = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    setValue('name', `${catsStr} - ${dateStr}`);
+  }, [watchedCategories, watchedDate, setValue]);
+
   const { fields: exerciseFields, append: appendExercise, remove: removeExercise } = useFieldArray({
     control,
     name: 'exercises',
   });
 
   const addedExerciseIds = exerciseFields.map(field => field.exerciseId);
-  const filteredExercisesList = EXERCISES.filter(ex =>
-    !addedExerciseIds.includes(ex.id) && (
-      ex.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
-      ex.category.toLowerCase().includes(exerciseSearch.toLowerCase())
-    )
-  );
+  const filteredExercisesList = EXERCISES.filter(ex => {
+    const isAdded = addedExerciseIds.includes(ex.id);
+    const matchesSearch = ex.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
+                          ex.category.toLowerCase().includes(exerciseSearch.toLowerCase());
+    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(ex.category);
+    return !isAdded && matchesSearch && matchesCategory;
+  });
 
-  const handleSelectExercise = (exerciseId: string, exerciseName: string) => {
-    appendExercise({ exerciseId, exerciseName, sets: [{ reps: 10, weight: 20, rpe: '' }], notes: '' });
-    setShowSearchModal(false);
-    setExerciseSearch('');
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const toggleTempExercise = (id: string, name: string) => {
+    setTempSelectedExercises(prev => 
+      prev.some(x => x.id === id) ? prev.filter(x => x.id !== id) : [...prev, { id, name }]
+    );
   };
 
   const onSubmit = async (data: WorkoutFormInput) => {
@@ -96,6 +134,7 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
         durationMinutes: Number(data.durationMinutes),
         notes: data.notes || '',
         clientId: workout.clientId,
+        categories: data.categories || [],
         exercises: data.exercises.map(ex => {
           const exerciseLog: any = {
             exerciseId: ex.exerciseId,
@@ -108,14 +147,16 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
               return setObj;
             }),
           };
-          if (ex.notes) exerciseLog.notes = ex.notes;
+          if (ex.notes) {
+            exerciseLog.notes = ex.notes;
+          }
           return exerciseLog;
         }),
       };
       await editWorkout(workout.id, updates);
       onClose();
     } catch (err: any) {
-      alert(`Failed to save: ${err.message}`);
+      alert(`Failed to save changes: ${err.message || err}`);
     } finally {
       setSaving(false);
     }
@@ -124,26 +165,20 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
   return (
     <AnimatedPage>
       <div className="max-w-3xl mx-auto space-y-8">
-        {/* Header */}
         <div className="flex items-center gap-4">
           <button
             onClick={onClose}
-            className="skeuo-btn-light p-2.5 rounded-xl text-slate-500"
+            className="p-2 hover:bg-slate-200/50 rounded-full text-slate-500 transition-colors shadow-sm bg-white"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Edit Workout
-            </h1>
-            <p className="text-slate-500 mt-0.5 font-medium text-sm">
-              Logged on {workout.date}
-            </p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Edit Workout</h1>
+            <p className="text-slate-500 text-sm">Update your recorded sets and reps.</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Main Info */}
           <div className="neu-card p-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -156,6 +191,7 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
                   className="w-full neu-input focus:ring-1 focus:ring-primary-500/20"
                 />
               </div>
+
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                   Workout Date
@@ -166,6 +202,7 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
                   className="w-full neu-input focus:ring-1 focus:ring-primary-500/20"
                 />
               </div>
+
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -178,13 +215,46 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
                 />
               </div>
             </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1">
+                <Dumbbell className="w-3.5 h-3.5 text-slate-400" />
+                Target Muscle Categories (Select multiple)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => {
+                  const isChecked = watch('categories')?.includes(cat) || false;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        const current = watch('categories') || [];
+                        const next = current.includes(cat)
+                          ? current.filter((c) => c !== cat)
+                          : [...current, cat];
+                        setValue('categories', next);
+                      }}
+                      className={`text-xs px-3.5 py-2 rounded-xl border font-bold transition-all flex items-center gap-1.5 ${
+                        isChecked
+                          ? 'bg-primary-500 border-primary-600 text-white shadow-md'
+                          : 'bg-[#e8ebf0] border-slate-350/20 text-slate-600 hover:bg-slate-200/50 shadow-sm'
+                      }`}
+                    >
+                      {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div>
               <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
                 <Clipboard className="w-3.5 h-3.5 text-slate-400" />
-                Notes (Optional)
+                Workout Notes (Optional)
               </label>
               <textarea
-                placeholder="Anything notable about this workout session?"
                 {...register('notes')}
                 rows={2}
                 className="w-full neu-input focus:ring-1 focus:ring-primary-500/20 resize-none"
@@ -192,7 +262,6 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
             </div>
           </div>
 
-          {/* Exercises */}
           <div className="space-y-6">
             {exerciseFields.map((field, index) => (
               <ExerciseRow
@@ -206,17 +275,20 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
             ))}
           </div>
 
-          {/* Add Exercise */}
           <button
             type="button"
-            onClick={() => setShowSearchModal(true)}
+            onClick={() => {
+              setTempSelectedExercises([]);
+              setSelectedCategories(watch('categories') || []);
+              setExerciseSearch('');
+              setShowSearchModal(true);
+            }}
             className="w-full py-4 border-2 border-dashed border-slate-300 rounded-2xl hover:border-primary-500 hover:text-primary-500 transition-all font-semibold text-slate-500 flex items-center justify-center gap-2"
           >
             <PlusCircle className="w-5 h-5" />
             Add Exercise
           </button>
 
-          {/* Save */}
           <div className="pt-4 border-t border-slate-200/60 flex justify-end gap-3">
             <button
               type="button"
@@ -236,63 +308,130 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
           </div>
         </form>
 
-        {/* Exercise Selector Modal */}
         {showSearchModal && (
           <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="glass-card w-full max-w-lg shadow-2xl relative max-h-[80vh] flex flex-col border border-white/60">
+            <div className="glass-card w-full max-w-lg shadow-2xl relative max-h-[85vh] flex flex-col border border-white/60">
               <div className="p-6 border-b border-slate-200/50 flex items-center justify-between">
                 <h3 className="font-extrabold text-slate-800 text-lg">Select Exercise</h3>
                 <button
                   type="button"
                   onClick={() => setShowSearchModal(false)}
-                  className="p-1.5 hover:bg-slate-200/50 rounded-full text-slate-500 transition-colors"
+                  className="p-1.5 hover:bg-slate-200/50 rounded-full text-slate-550 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="p-4 border-b border-slate-200/30 relative">
-                <Search className="absolute left-7 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search exercises..."
-                  value={exerciseSearch}
-                  onChange={e => setExerciseSearch(e.target.value)}
-                  className="w-full neu-input-search focus:ring-1 focus:ring-primary-500/20"
-                />
+
+              <div className="p-4 border-b border-slate-200/30 space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search exercises..."
+                    value={exerciseSearch}
+                    onChange={e => setExerciseSearch(e.target.value)}
+                    className="w-full neu-input-search focus:ring-1 focus:ring-primary-500/20 pl-9"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                    Filter by Categories
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {categories.map(cat => {
+                      const isSelected = selectedCategories.includes(cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => toggleCategory(cat)}
+                          className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all ${
+                            isSelected 
+                              ? 'bg-primary-500 border-primary-550 text-white shadow-sm'
+                              : 'bg-white/80 border-slate-200 text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
+
               <div className="flex-1 overflow-y-auto divide-y divide-slate-200/30 p-2">
-                {filteredExercisesList.map(ex => (
-                  <button
-                    key={ex.id}
-                    type="button"
-                    onClick={() => handleSelectExercise(ex.id, ex.name)}
-                    className="w-full text-left px-4 py-3 hover:bg-slate-100/50 rounded-xl transition-colors flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      {ex.image ? (
-                        <div className="w-12 h-12 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200/50 flex items-center justify-center">
-                          <img
-                            src={ex.image}
-                            alt={ex.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
-                            }}
-                          />
+                {filteredExercisesList.map(ex => {
+                  const isChecked = tempSelectedExercises.some(x => x.id === ex.id);
+                  return (
+                    <button
+                      key={ex.id}
+                      type="button"
+                      onClick={() => toggleTempExercise(ex.id, ex.name)}
+                      className={`w-full text-left px-4 py-3 hover:bg-slate-100/50 rounded-xl transition-colors flex items-center justify-between gap-3 ${
+                        isChecked ? 'bg-primary-50/30' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${
+                          isChecked 
+                            ? 'bg-primary-500 border-primary-600 text-white' 
+                            : 'border-slate-300 bg-white'
+                        }`}>
+                          {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                         </div>
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-[#e8ebf0] flex-shrink-0 flex items-center justify-center text-primary-500 border border-slate-200/50">
-                          <Dumbbell className="w-5 h-5" />
+                        {ex.image ? (
+                          <div className="w-12 h-12 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200/50 flex items-center justify-center">
+                            <img
+                              src={ex.image}
+                              alt={ex.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-[#e8ebf0] flex-shrink-0 flex items-center justify-center text-primary-500 border border-slate-200/50">
+                            <Dumbbell className="w-5 h-5" />
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-bold text-slate-800 text-sm">{ex.name}</h4>
+                          <p className="text-xs text-slate-400 mt-0.5">{ex.category} &middot; {ex.primaryMuscle}</p>
                         </div>
-                      )}
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-sm">{ex.name}</h4>
-                        <p className="text-xs text-slate-400 mt-0.5">{ex.category} &middot; {ex.primaryMuscle}</p>
                       </div>
-                    </div>
-                    <Plus className="w-4 h-4 text-slate-400" />
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="p-4 border-t border-slate-200/45 flex justify-end gap-2 bg-slate-50/50 rounded-b-2xl">
+                <button
+                  type="button"
+                  onClick={() => setShowSearchModal(false)}
+                  className="skeuo-btn-light px-4 py-2 text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    tempSelectedExercises.forEach(ex => {
+                      appendExercise({
+                        exerciseId: ex.id,
+                        exerciseName: ex.name,
+                        sets: [{ reps: 10, weight: 20, rpe: '' }],
+                        notes: ''
+                      });
+                    });
+                    setShowSearchModal(false);
+                  }}
+                  disabled={tempSelectedExercises.length === 0}
+                  className="skeuo-btn-orange px-5 py-2 text-xs text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Selected ({tempSelectedExercises.length})
+                </button>
               </div>
             </div>
           </div>
@@ -302,7 +441,6 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
   );
 };
 
-// Reusable nested sets manager (same pattern as WorkoutLogger)
 interface ExerciseRowProps {
   control: any;
   index: number;

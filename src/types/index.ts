@@ -32,6 +32,7 @@ export interface Workout {
   durationMinutes: number;
   exercises: ExerciseLog[];
   notes?: string;
+  categories?: string[];
 }
 
 export interface BodyWeight {

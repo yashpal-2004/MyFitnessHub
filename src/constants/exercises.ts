@@ -294,6 +294,27 @@ export const EXERCISES: ExerciseWithImage[] = [
     "image": "/exercises/dumbbell-overhead-triceps-extension.png"
   },
   {
+    "id": "one-arm-dumbbell-overhead-triceps-extension",
+    "name": "One-Arm Dumbbell Overhead Triceps Extension",
+    "category": "Triceps",
+    "primaryMuscle": "Triceps",
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "equipment": "Dumbbells",
+    "difficulty": "Intermediate",
+    "instructions": [
+      "Sit or stand holding a dumbbell in one hand directly overhead.",
+      "Keep your upper arm stationary and near your head, bending at the elbow to lower the dumbbell behind your head.",
+      "Push the dumbbell back up to the starting position by contracting your triceps."
+    ],
+    "commonMistakes": [
+      "Flaring the elbow out to the side",
+      "Arching the lower back excessively"
+    ],
+    "image": "/exercises/one-arm-dumbbell-overhead-triceps-extension.png"
+  },
+  {
     "id": "close-grip-bench-press",
     "name": "Close Grip Bench Press",
     "category": "Triceps",

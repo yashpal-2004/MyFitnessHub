@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
@@ -10,7 +10,8 @@ import {
   TrendingUp, 
   Sparkles, 
   Plus, 
-  ChevronRight 
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 import { AnimatedPage } from '../components/AnimatedPage';
@@ -23,6 +24,8 @@ export const Dashboard: React.FC = () => {
     personalRecords, 
     isLoading 
   } = useFitnessStore();
+
+  const [showAllPrs, setShowAllPrs] = useState(false);
 
   useEffect(() => {
     initialize();
@@ -113,7 +116,11 @@ export const Dashboard: React.FC = () => {
             animate="show"
             className="grid grid-cols-2 lg:grid-cols-4 gap-4"
           >
-            <motion.div variants={cardVariants} className="neu-card p-5 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01] transition-all duration-150">
+            <motion.div 
+              variants={cardVariants} 
+              onClick={() => { if (personalRecords.length > 0) setShowAllPrs(true); }}
+              className="neu-card p-5 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01] transition-all duration-150 cursor-pointer"
+            >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-400">Total Workouts</span>
                 <div className="p-2.5 shadow-neu-inset bg-[#e8ebf0] text-primary-500 rounded-xl">
@@ -141,20 +148,28 @@ export const Dashboard: React.FC = () => {
               </div>
             </motion.div>
 
-            <motion.div variants={cardVariants} className="neu-card p-5 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01] transition-all duration-150">
+            <Link 
+              to="/records"
+              state={{ tab: 'prs' }}
+              className="neu-card p-5 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01] transition-all duration-150 cursor-pointer"
+            >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-400">Personal Records</span>
-                <div className="p-2.5 shadow-neu-inset bg-[#e8ebf0] text-yellow-650 rounded-xl">
-                  <Trophy className="w-5 h-5" />
+                <div className="p-2.5 shadow-neu-inset bg-[#e8ebf0] text-yellow-655 rounded-xl">
+                  <Trophy className="w-5 h-5 text-yellow-500" />
                 </div>
               </div>
               <div className="mt-4">
                 <span className="text-3xl font-extrabold text-slate-800 tracking-tight">{totalPrs}</span>
                 <span className="text-xs text-slate-400 block mt-1">Exercises mastered</span>
               </div>
-            </motion.div>
+            </Link>
 
-            <motion.div variants={cardVariants} className="neu-card p-5 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01] transition-all duration-150">
+            <Link 
+              to="/records"
+              state={{ tab: 'tracked' }}
+              className="neu-card p-5 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01] transition-all duration-150 cursor-pointer text-left"
+            >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-400">Exercises Tracked</span>
                 <div className="p-2.5 shadow-neu-inset bg-[#e8ebf0] text-emerald-650 rounded-xl">
@@ -165,7 +180,7 @@ export const Dashboard: React.FC = () => {
                 <span className="text-3xl font-extrabold text-slate-800 tracking-tight">{totalExercisesLogged}</span>
                 <span className="text-xs text-slate-400 block mt-1">Individual sets completed</span>
               </div>
-            </motion.div>
+            </Link>
           </motion.div>
         )}
 
@@ -183,10 +198,19 @@ export const Dashboard: React.FC = () => {
                 <span className="text-xs font-semibold text-slate-400">{todayStr}</span>
               </div>
 
-              {todayWorkout ? (
+               {todayWorkout ? (
                 <div className="neu-card-inset p-4 flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-slate-800">{todayWorkout.name}</h3>
+                    {todayWorkout.categories && todayWorkout.categories.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                        {todayWorkout.categories.map((cat) => (
+                          <span key={cat} className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-primary-50 text-primary-600 border border-primary-100 uppercase tracking-wider">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-xs text-slate-500 mt-1">
                       Completed: {todayWorkout.exercises.length} Exercises in {todayWorkout.durationMinutes} min
                     </p>
@@ -225,6 +249,15 @@ export const Dashboard: React.FC = () => {
                     <div key={workout.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between">
                       <div>
                         <h4 className="font-bold text-slate-800 text-sm">{workout.name}</h4>
+                        {workout.categories && workout.categories.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                            {workout.categories.map((cat) => (
+                              <span key={cat} className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-primary-50 text-primary-600 border border-primary-100 uppercase tracking-wider">
+                                {cat}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <p className="text-xs text-slate-400 mt-0.5">
                           {workout.date} &middot; {workout.durationMinutes} min &middot; {workout.exercises.length} Exercises
                         </p>
@@ -285,13 +318,23 @@ export const Dashboard: React.FC = () => {
 
             {/* Top Personal Record */}
             <div className="glass-card p-6 shadow-neu-outset border border-white/60">
-              <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-                Recent PRs
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-500" />
+                  Recent PRs
+                </h2>
+                {personalRecords.length > 0 && (
+                  <button
+                    onClick={() => setShowAllPrs(true)}
+                    className="text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors"
+                  >
+                    View All
+                  </button>
+                )}
+              </div>
 
               {personalRecords.length === 0 ? (
-                <div className="text-center py-6 text-slate-450 text-xs font-medium">
+                <div className="text-center py-6 text-slate-455 text-xs font-medium">
                   <p>PRs will show up here as you lift heavier weight.</p>
                 </div>
               ) : (
@@ -313,6 +356,40 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* View All PRs Modal */}
+      {showAllPrs && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="glass-card w-full max-w-lg shadow-2xl relative max-h-[80vh] flex flex-col border border-white/60 p-0">
+            <div className="p-6 border-b border-slate-200/50 flex items-center justify-between">
+              <h3 className="font-extrabold text-slate-800 text-lg flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-500" />
+                All Personal Records
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAllPrs(false)}
+                className="p-1.5 hover:bg-slate-200/50 rounded-full text-slate-450 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-200/30 p-4 space-y-3">
+              {personalRecords.map((pr) => (
+                <div key={pr.id} className="flex items-center justify-between p-3.5 neu-card-inset first:mt-0">
+                  <div>
+                    <h4 className="font-bold text-slate-850 text-sm">{pr.exerciseName}</h4>
+                    <span className="text-xs text-slate-400 font-medium block mt-0.5">Achieved on: {pr.date}</span>
+                  </div>
+                  <span className="bg-gradient-to-b from-yellow-400 to-yellow-600 text-white font-extrabold text-sm px-3.5 py-1.5 rounded-xl shadow-skeuo-button border border-yellow-500/50">
+                    {pr.value} {pr.type === 'weight' ? 'kg' : 'vol'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </AnimatedPage>
   );
 };

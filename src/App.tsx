@@ -10,6 +10,7 @@ const WorkoutLogger = lazy(() => import('./pages/WorkoutLogger'));
 const WeightTracker = lazy(() => import('./pages/WeightTracker'));
 const CalendarView = lazy(() => import('./pages/CalendarView'));
 const Analytics = lazy(() => import('./pages/Analytics'));
+const RecordsPage = lazy(() => import('./pages/RecordsPage').then(m => ({ default: m.RecordsPage })));
 
 const LoadingFallback = () => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
@@ -31,6 +32,7 @@ function App() {
               <Route path="/weight" element={<WeightTracker />} />
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/analytics" element={<Analytics />} />
+              <Route path="/records" element={<RecordsPage />} />
             </Routes>
           </AnimatePresence>
         </Suspense>
