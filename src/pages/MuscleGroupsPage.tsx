@@ -98,14 +98,14 @@ const ANATOMY_COORDINATES: Record<string, Record<string, {
   Back: {
     'Lats': { coords: [{ x: 115, y: 215, view: 'back' }, { x: 185, y: 215, view: 'back' }], labelY: 215, dir: 'out' },
     'Upper Back': { coords: [{ x: 150, y: 148, view: 'back' }], labelY: 130, dir: 'out' },
-    'Lower Back': { coords: [{ x: 150, y: 255, view: 'back' }], labelY: 270, view: 'out' }
+    'Lower Back': { coords: [{ x: 150, y: 255, view: 'back' }], labelY: 270, dir: 'out' }
   },
   Legs: {
     'Quads': { coords: [{ x: 120, y: 315, view: 'front' }, { x: 180, y: 315, view: 'front' }], labelY: 295, dir: 'out' },
     'Hamstrings': { coords: [{ x: 122, y: 345, view: 'back' }, { x: 178, y: 345, view: 'back' }], labelY: 385, dir: 'out' },
-    'Glutes': { coords: [{ x: 125, y: 275, view: 'back' }, { x: 175, y: 275, view: 'back' }], labelY: 245, view: 'out' },
-    'Calves': { coords: [{ x: 112, y: 425, view: 'back' }, { x: 188, y: 425, view: 'back' }], labelY: 450, view: 'out' },
-    'Inner Thighs': { coords: [{ x: 135, y: 325, view: 'front' }, { x: 165, y: 325, view: 'front' }], labelY: 340, view: 'in' }
+    'Glutes': { coords: [{ x: 125, y: 275, view: 'back' }, { x: 175, y: 275, view: 'back' }], labelY: 245, dir: 'out' },
+    'Calves': { coords: [{ x: 112, y: 425, view: 'back' }, { x: 188, y: 425, view: 'back' }], labelY: 450, dir: 'out' },
+    'Inner Thighs': { coords: [{ x: 135, y: 325, view: 'front' }, { x: 165, y: 325, view: 'front' }], labelY: 340, dir: 'in' }
   }
 };
 
