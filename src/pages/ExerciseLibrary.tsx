@@ -214,12 +214,12 @@ export const ExerciseLibrary: React.FC = () => {
                     )}
                     {exercisePrs[selectedExercise.id]?.weight && (
                       <span className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-gradient-to-b from-yellow-400 to-yellow-600 text-white border border-yellow-500/50 flex items-center gap-1 shadow-sm">
-                        PR: {exercisePrs[selectedExercise.id].weight.value} kg
+                        PR: {exercisePrs[selectedExercise.id]?.weight?.value} kg
                       </span>
                     )}
                     {exercisePrs[selectedExercise.id]?.volume && (
                       <span className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-gradient-to-b from-orange-400 to-orange-600 text-white border border-orange-500/50 flex items-center gap-1 shadow-sm">
-                        Vol PR: {exercisePrs[selectedExercise.id].volume.value} vol
+                        Vol PR: {exercisePrs[selectedExercise.id]?.volume?.value} vol
                       </span>
                     )}
                   </div>
@@ -424,13 +424,13 @@ export const ExerciseLibrary: React.FC = () => {
                           {exercisePrs[ex.id]?.weight && (
                             <div className="flex items-center gap-1.5 text-xs">
                               <span className="text-slate-400 font-medium w-28">Best Weight:</span>
-                              <span className="text-yellow-600 font-extrabold">{exercisePrs[ex.id].weight.value} kg</span>
+                              <span className="text-yellow-600 font-extrabold">{exercisePrs[ex.id]?.weight?.value} kg</span>
                             </div>
                           )}
                           {exercisePrs[ex.id]?.volume && (
                             <div className="flex items-center gap-1.5 text-xs">
                               <span className="text-slate-400 font-medium w-28">Best Volume:</span>
-                              <span className="text-orange-600 font-extrabold">{exercisePrs[ex.id].volume.value} vol</span>
+                              <span className="text-orange-600 font-extrabold">{exercisePrs[ex.id]?.volume?.value} vol</span>
                             </div>
                           )}
                         </div>
