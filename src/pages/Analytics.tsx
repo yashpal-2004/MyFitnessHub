@@ -109,6 +109,8 @@ export const Analytics: React.FC = () => {
     ? [...distData].sort((a, b) => b.value - a.value)[0].name 
     : 'No data yet';
 
+  const uniquePrCount = new Set(personalRecords.map(pr => pr.exerciseId)).size;
+
   return (
     <AnimatedPage>
       <div className="space-y-8">
@@ -140,7 +142,7 @@ export const Analytics: React.FC = () => {
             </div>
             <div>
               <span className="text-xs font-semibold text-slate-400 block uppercase tracking-wider">PRs Achieved</span>
-              <span className="text-xl font-extrabold text-slate-800">{personalRecords.length} records</span>
+              <span className="text-xl font-extrabold text-slate-800">{uniquePrCount} records</span>
             </div>
           </div>
 
@@ -157,6 +159,52 @@ export const Analytics: React.FC = () => {
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Muscle Training Distribution */}
+          <div className="glass-card p-6 shadow-neu-outset border border-white/60 flex flex-col justify-between">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="p-2 shadow-neu-inset bg-[#e8ebf0] text-emerald-500 rounded-xl">
+                <Target className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-slate-800 text-sm">Target Balance (Exercise Frequency)</h3>
+            </div>
+            <div className="h-64 w-full flex items-center justify-center">
+              {distData.length === 0 ? (
+                <span className="text-slate-450 text-xs font-semibold">No balance data logged.</span>
+              ) : (
+                <div className="w-full h-full flex flex-col md:flex-row items-center justify-center gap-6">
+                  <div className="w-44 h-44">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={distData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={70}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {distData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                    {distData.map((entry, index) => (
+                      <div key={entry.name} className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                        <span className="text-slate-500 font-semibold">{entry.name} ({entry.value})</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Workout Volume by Muscle Group */}
           <div className="glass-card p-6 shadow-neu-outset border border-white/60 flex flex-col justify-between">
             <div className="flex items-center gap-2.5 mb-4">
@@ -203,52 +251,6 @@ export const Analytics: React.FC = () => {
                     <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          {/* Muscle Training Distribution */}
-          <div className="glass-card p-6 shadow-neu-outset border border-white/60 flex flex-col justify-between">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="p-2 shadow-neu-inset bg-[#e8ebf0] text-emerald-500 rounded-xl">
-                <Target className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-slate-800 text-sm">Target Balance (Exercise Frequency)</h3>
-            </div>
-            <div className="h-64 w-full flex items-center justify-center">
-              {distData.length === 0 ? (
-                <span className="text-slate-450 text-xs font-semibold">No balance data logged.</span>
-              ) : (
-                <div className="w-full h-full flex flex-col md:flex-row items-center justify-center gap-6">
-                  <div className="w-44 h-44">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={distData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={70}
-                          paddingAngle={3}
-                          dataKey="value"
-                        >
-                          {distData.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                    {distData.map((entry, index) => (
-                      <div key={entry.name} className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                        <span className="text-slate-500 font-semibold">{entry.name} ({entry.value})</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               )}
             </div>
           </div>

@@ -42,7 +42,62 @@ interface FitnessState {
   deleteWeight: (id: string) => Promise<void>;
   triggerSync: () => Promise<void>;
   setOnlineStatus: (status: boolean) => void;
+  syncPrsToFirestore: (newPrs: Omit<PersonalRecord, 'id'>[]) => Promise<void>;
 }
+
+const computePersonalRecords = (workouts: Workout[], clientId: string): Omit<PersonalRecord, 'id'>[] => {
+  const prs: Record<string, { weight?: Omit<PersonalRecord, 'id'>; volume?: Omit<PersonalRecord, 'id'> }> = {};
+  const sorted = [...workouts].sort((a, b) => a.date.localeCompare(b.date));
+
+  for (const workout of sorted) {
+    for (const log of workout.exercises) {
+      let maxWeight = 0;
+      let maxVolume = 0;
+
+      for (const setItem of log.sets) {
+        if (setItem.weight > maxWeight) maxWeight = setItem.weight;
+        const vol = setItem.weight * setItem.reps;
+        if (vol > maxVolume) maxVolume = vol;
+      }
+
+      if (!prs[log.exerciseId]) {
+        prs[log.exerciseId] = {};
+      }
+
+      const currentWeightPr = prs[log.exerciseId].weight;
+      if (!currentWeightPr || maxWeight > currentWeightPr.value) {
+        prs[log.exerciseId].weight = {
+          clientId,
+          exerciseId: log.exerciseId,
+          exerciseName: log.exerciseName,
+          value: maxWeight,
+          type: 'weight',
+          date: workout.date
+        };
+      }
+
+      const currentVolumePr = prs[log.exerciseId].volume;
+      if (!currentVolumePr || maxVolume > currentVolumePr.value) {
+        prs[log.exerciseId].volume = {
+          clientId,
+          exerciseId: log.exerciseId,
+          exerciseName: log.exerciseName,
+          value: maxVolume,
+          type: 'volume',
+          date: workout.date
+        };
+      }
+    }
+  }
+
+  const result: Omit<PersonalRecord, 'id'>[] = [];
+  for (const exId of Object.keys(prs)) {
+    const item = prs[exId];
+    if (item.weight && item.weight.value > 0) result.push(item.weight);
+    if (item.volume && item.volume.value > 0) result.push(item.volume);
+  }
+  return result;
+};
 
 const getOrCreateClientId = (): string => {
   return 'global_guest_user';
@@ -118,14 +173,24 @@ export const useFitnessStore = create<FitnessState>()(
             personalRecords.push({ id: doc.id, ...doc.data() } as PersonalRecord);
           });
 
+          // Recalculate personal records to detect and clean up any orphaned/incorrect past DB records
+          const computedPrs = computePersonalRecords(workouts, cId);
+
           set({ 
             workouts, 
             bodyWeights, 
-            personalRecords, 
+            personalRecords: computedPrs.map(pr => {
+              // Try to preserve existing Firestore ID if it matches
+              const existing = personalRecords.find(p => p.exerciseId === pr.exerciseId && p.type === pr.type && p.value === pr.value && p.date === pr.date);
+              return existing ? existing : { id: 'temp_pr_' + Math.random(), ...pr };
+            }), 
             isInitialLoaded: true, 
             isLoading: false,
             lastSynced: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
           });
+
+          // Sync computed PRs back to Firestore in case there were orphaned entries
+          await get().syncPrsToFirestore(computedPrs);
           
           // Trigger sync of any actions queued while offline
           get().triggerSync();
@@ -146,67 +211,22 @@ export const useFitnessStore = create<FitnessState>()(
         const tempId = 'temp_' + Date.now();
         const newWorkout: Workout = { id: tempId, clientId: cId, ...workoutData };
 
+        const updatedWorkouts = [newWorkout, ...get().workouts];
+        const newPrs = computePersonalRecords(updatedWorkouts, cId);
+
         // Optimistically add to state
-        set(state => ({
-          workouts: [newWorkout, ...state.workouts],
+        set({
+          workouts: updatedWorkouts,
+          personalRecords: newPrs.map(pr => ({ id: 'temp_pr_' + Math.random(), ...pr })),
           isLoading: false
-        }));
-
-        // Evaluate Personal Records locally
-        const currentPrs = [...get().personalRecords];
-        const newPrsToSave: Omit<PersonalRecord, 'id'>[] = [];
-
-        for (const log of workoutData.exercises) {
-          let maxWeight = 0;
-          let maxVolume = 0;
-          
-          for (const setItem of log.sets) {
-            if (setItem.weight > maxWeight) maxWeight = setItem.weight;
-            const vol = setItem.weight * setItem.reps;
-            if (vol > maxVolume) maxVolume = vol;
-          }
-
-          // Check Max Weight PR
-          const existingWeightPr = currentPrs.find(p => p.exerciseId === log.exerciseId && p.type === 'weight');
-          if (!existingWeightPr || maxWeight > existingWeightPr.value) {
-            newPrsToSave.push({
-              clientId: cId,
-              exerciseId: log.exerciseId,
-              exerciseName: log.exerciseName,
-              value: maxWeight,
-              type: 'weight',
-              date: workoutData.date
-            });
-          }
-
-          // Check Max Volume PR
-          const existingVolPr = currentPrs.find(p => p.exerciseId === log.exerciseId && p.type === 'volume');
-          if (!existingVolPr || maxVolume > existingVolPr.value) {
-            newPrsToSave.push({
-              clientId: cId,
-              exerciseId: log.exerciseId,
-              exerciseName: log.exerciseName,
-              value: maxVolume,
-              type: 'volume',
-              date: workoutData.date
-            });
-          }
-        }
-
-        // Apply PRs locally
-        const tempSavedPrs = newPrsToSave.map(pr => ({ id: 'temp_pr_' + Math.random(), ...pr }));
-        const updatedPrs = [
-          ...currentPrs.filter(p => !newPrsToSave.some(np => np.exerciseId === p.exerciseId && np.type === p.type)),
-          ...tempSavedPrs
-        ];
-        set({ personalRecords: updatedPrs });
+        });
 
         if (!get().isOnline) {
           // Queue action
           const pendingAction: PendingAction = {
             id: 'act_' + Date.now(),
             type: 'ADD_WORKOUT',
-            payload: { tempId, workoutData, newPrsToSave },
+            payload: { tempId, workoutData, newPrsToSave: newPrs },
             timestamp: Date.now()
           };
           set(state => ({ pendingActions: [...state.pendingActions, pendingAction] }));
@@ -222,29 +242,14 @@ export const useFitnessStore = create<FitnessState>()(
             workouts: state.workouts.map(w => w.id === tempId ? { ...w, id: docRef.id } : w)
           }));
 
-          // Save PRs to Firestore
-          const savedPrs: PersonalRecord[] = [];
-          for (const pr of newPrsToSave) {
-            const existing = currentPrs.find(p => p.exerciseId === pr.exerciseId && p.type === pr.type);
-            if (existing) {
-              await deleteDoc(doc(db, 'personalRecords', existing.id));
-            }
-            const prRef = await addDoc(collection(db, 'personalRecords'), pr);
-            savedPrs.push({ id: prRef.id, ...pr });
-          }
-
-          set({
-            personalRecords: [
-              ...currentPrs.filter(p => !newPrsToSave.some(np => np.exerciseId === p.exerciseId && np.type === p.type)),
-              ...savedPrs
-            ]
-          });
+          // Sync PRs to Firestore
+          await get().syncPrsToFirestore(newPrs);
         } catch (err: any) {
           console.error("Firestore save failed, queuing for offline sync: ", err);
           const pendingAction: PendingAction = {
             id: 'act_' + Date.now(),
             type: 'ADD_WORKOUT',
-            payload: { tempId, workoutData, newPrsToSave },
+            payload: { tempId, workoutData, newPrsToSave: newPrs },
             timestamp: Date.now()
           };
           set(state => ({ pendingActions: [...state.pendingActions, pendingAction] }));
@@ -252,11 +257,17 @@ export const useFitnessStore = create<FitnessState>()(
       },
 
       deleteWorkout: async (id) => {
+        set({ isLoading: true, error: null });
+        const cId = get().clientId;
+        const remainingWorkouts = get().workouts.filter(w => w.id !== id);
+        const newPrs = computePersonalRecords(remainingWorkouts, cId);
+
         // Optimistic delete
-        set(state => ({
-          workouts: state.workouts.filter(w => w.id !== id),
+        set({
+          workouts: remainingWorkouts,
+          personalRecords: newPrs.map(pr => ({ id: 'temp_pr_' + Math.random(), ...pr })),
           isLoading: false
-        }));
+        });
 
         if (!get().isOnline || id.startsWith('temp_')) {
           const pendingAction: PendingAction = {
@@ -271,6 +282,7 @@ export const useFitnessStore = create<FitnessState>()(
 
         try {
           await deleteDoc(doc(db, 'workouts', id));
+          await get().syncPrsToFirestore(newPrs);
         } catch (err: any) {
           const pendingAction: PendingAction = {
             id: 'act_' + Date.now(),
@@ -283,12 +295,18 @@ export const useFitnessStore = create<FitnessState>()(
       },
 
       editWorkout: async (id, updates) => {
+        set({ isLoading: true, error: null });
+        const cId = get().clientId;
+        const updatedWorkouts = get().workouts.map(w => w.id === id ? { ...w, ...updates } : w)
+          .sort((a, b) => b.date.localeCompare(a.date));
+        const newPrs = computePersonalRecords(updatedWorkouts, cId);
+
         // Optimistic edit
-        set(state => ({
-          workouts: state.workouts.map(w => w.id === id ? { ...w, ...updates } : w)
-            .sort((a, b) => b.date.localeCompare(a.date)),
+        set({
+          workouts: updatedWorkouts,
+          personalRecords: newPrs.map(pr => ({ id: 'temp_pr_' + Math.random(), ...pr })),
           isLoading: false
-        }));
+        });
 
         if (!get().isOnline || id.startsWith('temp_')) {
           const pendingAction: PendingAction = {
@@ -302,9 +320,9 @@ export const useFitnessStore = create<FitnessState>()(
         }
 
         try {
-          const cId = get().clientId;
           const docRef = doc(db, 'workouts', id);
           await updateDoc(docRef, { ...updates, clientId: cId });
+          await get().syncPrsToFirestore(newPrs);
         } catch (err: any) {
           const pendingAction: PendingAction = {
             id: 'act_' + Date.now(),
@@ -420,6 +438,65 @@ export const useFitnessStore = create<FitnessState>()(
         }
       },
 
+      syncPrsToFirestore: async (newPrs) => {
+        if (!get().isOnline) return;
+        try {
+          const cId = get().clientId;
+          const prsRef = collection(db, 'personalRecords');
+          const qPrs = query(prsRef, where('clientId', '==', cId));
+          const querySnap = await getDocs(qPrs);
+          
+          const existingPrs: PersonalRecord[] = [];
+          querySnap.forEach((docSnap) => {
+            existingPrs.push({ id: docSnap.id, ...docSnap.data() } as PersonalRecord);
+          });
+          
+          const toDelete: PersonalRecord[] = [];
+          const matchedIds = new Set<string>();
+          
+          for (const existing of existingPrs) {
+            const matchIndex = newPrs.findIndex((np) => 
+              !matchedIds.has(`${np.exerciseId}_${np.type}_${np.value}_${np.date}`) &&
+              np.exerciseId === existing.exerciseId &&
+              np.type === existing.type &&
+              np.value === existing.value &&
+              np.date === existing.date
+            );
+            
+            if (matchIndex !== -1) {
+              matchedIds.add(`${newPrs[matchIndex].exerciseId}_${newPrs[matchIndex].type}_${newPrs[matchIndex].value}_${newPrs[matchIndex].date}`);
+            } else {
+              toDelete.push(existing);
+            }
+          }
+          
+          const toAdd = newPrs.filter(np => 
+            !existingPrs.some(existing => 
+              np.exerciseId === existing.exerciseId && 
+              np.type === existing.type && 
+              np.value === existing.value && 
+              np.date === existing.date
+            )
+          );
+          
+          await Promise.all(toDelete.map(pr => deleteDoc(doc(db, 'personalRecords', pr.id))));
+          
+          const addedPrs: PersonalRecord[] = [];
+          for (const pr of toAdd) {
+            const docRef = await addDoc(collection(db, 'personalRecords'), pr);
+            addedPrs.push({ id: docRef.id, ...pr });
+          }
+          
+          const keptPrs = existingPrs.filter(existing => 
+            !toDelete.some(td => td.id === existing.id)
+          );
+          
+          set({ personalRecords: [...keptPrs, ...addedPrs] });
+        } catch (err) {
+          console.error("Failed to sync PRs to Firestore:", err);
+        }
+      },
+
       triggerSync: async () => {
         if (!get().isOnline || get().syncStatus === 'syncing') return;
         const actions = get().pendingActions;
@@ -505,6 +582,9 @@ export const useFitnessStore = create<FitnessState>()(
             remainingActions.shift();
             set({ pendingActions: [...remainingActions] });
           }
+
+          const finalPrs = computePersonalRecords(get().workouts, get().clientId);
+          await get().syncPrsToFirestore(finalPrs);
 
           set({ 
             syncStatus: 'idle', 

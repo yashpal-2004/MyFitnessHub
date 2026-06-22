@@ -8,7 +8,10 @@ import {
   Scale, 
   PlusCircle,
   WifiOff,
-  RefreshCw
+  RefreshCw,
+  Trophy,
+  History,
+  Target
 } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 
@@ -27,9 +30,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/exercises', label: 'Exercises', icon: Dumbbell },
+    { path: '/anatomy', label: 'Anatomy', icon: Target },
     { path: '/log', label: 'Log Workout', icon: PlusCircle, highlight: true },
+    { path: '/history', label: 'History', icon: History },
     { path: '/calendar', label: 'Calendar', icon: Calendar },
     { path: '/weight', label: 'Weight', icon: Scale },
+    { path: '/records', label: 'Records', icon: Trophy },
     { path: '/analytics', label: 'Analytics', icon: LineChart },
   ];
 

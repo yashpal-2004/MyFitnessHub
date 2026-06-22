@@ -61,8 +61,39 @@ export const RecordsPage: React.FC = () => {
 
   const trackedExercises = getTrackedExerciseStats();
 
+  // Group personal records by exercise
+  const groupedPrs = React.useMemo(() => {
+    const groups: Record<string, {
+      exerciseId: string;
+      exerciseName: string;
+      weightPr?: typeof personalRecords[0];
+      volumePr?: typeof personalRecords[0];
+      latestDate: string;
+    }> = {};
+
+    personalRecords.forEach(pr => {
+      if (!groups[pr.exerciseId]) {
+        groups[pr.exerciseId] = {
+          exerciseId: pr.exerciseId,
+          exerciseName: pr.exerciseName,
+          latestDate: pr.date
+        };
+      }
+      if (pr.type === 'weight') {
+        groups[pr.exerciseId].weightPr = pr;
+      } else if (pr.type === 'volume') {
+        groups[pr.exerciseId].volumePr = pr;
+      }
+      if (pr.date > groups[pr.exerciseId].latestDate) {
+        groups[pr.exerciseId].latestDate = pr.date;
+      }
+    });
+
+    return Object.values(groups);
+  }, [personalRecords]);
+
   // Filter personal records
-  const filteredPrs = personalRecords.filter(pr => 
+  const filteredPrs = groupedPrs.filter(pr => 
     pr.exerciseName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -102,7 +133,7 @@ export const RecordsPage: React.FC = () => {
             }`}
           >
             <Trophy className={`w-4 h-4 ${activeTab === 'prs' ? 'text-yellow-500' : 'text-slate-400'}`} />
-            Personal Records ({personalRecords.length})
+            Personal Records ({groupedPrs.length})
           </button>
           <button
             onClick={() => {
@@ -149,17 +180,26 @@ export const RecordsPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredPrs.map((pr) => (
-                <div key={pr.id} className="glass-card p-5 shadow-neu-outset border border-white/60 flex items-center justify-between group hover:scale-[1.01] transition-transform duration-150">
+                <div key={pr.exerciseId} className="glass-card p-5 shadow-neu-outset border border-white/60 flex items-center justify-between group hover:scale-[1.01] transition-transform duration-150">
                   <div>
                     <h4 className="font-extrabold text-slate-800 text-base">{pr.exerciseName}</h4>
-                    <div className="flex items-center gap-2 text-xs text-slate-450 mt-1 font-medium">
+                    <div className="flex items-center gap-2 text-xs text-slate-455 mt-1 font-medium">
                       <Calendar className="w-3.5 h-3.5" />
-                      <span>{pr.date}</span>
+                      <span>Last PR: {pr.latestDate}</span>
                     </div>
                   </div>
-                  <span className="bg-gradient-to-b from-yellow-400 to-yellow-600 text-white font-black text-sm px-4 py-2 rounded-xl shadow-skeuo-button border border-yellow-500/50">
-                    {pr.value} {pr.type === 'weight' ? 'kg' : 'vol'}
-                  </span>
+                  <div className="flex gap-2">
+                    {pr.weightPr && (
+                      <span className="bg-gradient-to-b from-yellow-400 to-yellow-600 text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-skeuo-button border border-yellow-500/50">
+                        {pr.weightPr.value} kg
+                      </span>
+                    )}
+                    {pr.volumePr && (
+                      <span className="bg-gradient-to-b from-orange-400 to-orange-600 text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-skeuo-button border border-orange-500/50">
+                        {pr.volumePr.value} vol
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

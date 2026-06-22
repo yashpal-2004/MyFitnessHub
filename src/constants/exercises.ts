@@ -1975,25 +1975,6 @@ export const EXERCISES: ExerciseWithImage[] = [
     "image": "/exercises/banded-glute-bridge.png"
   },
   {
-    "id": "bird-dog",
-    "name": "Bird Dog",
-    "category": "Legs",
-    "primaryMuscle": "Core",
-    "secondaryMuscles": [
-      "Glutes",
-      "Shoulders"
-    ],
-    "equipment": "Bodyweight",
-    "difficulty": "Beginner",
-    "instructions": [
-      "All fours, extend opposite arm and leg."
-    ],
-    "commonMistakes": [
-      "Arching back"
-    ],
-    "image": "/exercises/bird-dog.png"
-  },
-  {
     "id": "good-morning",
     "name": "Good Morning",
     "category": "Legs",
@@ -2282,26 +2263,6 @@ export const EXERCISES: ExerciseWithImage[] = [
     "image": "/exercises/donkey-kicks.png"
   },
   {
-    "id": "kettlebell-swings",
-    "name": "Kettlebell Swings",
-    "category": "Legs",
-    "primaryMuscle": "Hamstrings & Glutes",
-    "secondaryMuscles": [
-      "Core",
-      "Shoulders"
-    ],
-    "equipment": "Dumbbells",
-    "difficulty": "Intermediate",
-    "instructions": [
-      "Hinge at hips, swing bell back, snap hips forward to drive bell."
-    ],
-    "commonMistakes": [
-      "Squatting instead of hinging",
-      "Using arms to pull"
-    ],
-    "image": "/exercises/kettlebell-swings.png"
-  },
-  {
     "id": "standing-cable-kickback",
     "name": "Standing Cable Kickback",
     "category": "Legs",
@@ -2394,5 +2355,26 @@ export const EXERCISES: ExerciseWithImage[] = [
       "Bending the elbows"
     ],
     "image": "/exercises/barbell-shrug.png"
+  },
+  {
+    "id": "machine-shrug",
+    "name": "Machine Shrug",
+    "category": "Shoulders",
+    "primaryMuscle": "Trapezius",
+    "secondaryMuscles": [
+      "Upper Back"
+    ],
+    "equipment": "Machine",
+    "difficulty": "Beginner",
+    "instructions": [
+      "Stand on the machine platform and grip the handles on either side.",
+      "Keep your arms straight and lift your shoulders up toward your ears as high as possible.",
+      "Squeeze your traps at the peak of the movement, then slowly lower to the starting position."
+    ],
+    "commonMistakes": [
+      "Rolling the shoulders in circles",
+      "Using too much weight causing neck strain"
+    ],
+    "image": "/exercises/machine-shrug.png"
   }
 ];

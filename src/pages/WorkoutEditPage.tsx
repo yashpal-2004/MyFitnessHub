@@ -42,12 +42,27 @@ interface WorkoutEditPageProps {
 }
 
 export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClose }) => {
-  const { editWorkout } = useFitnessStore();
+  const { editWorkout, workouts } = useFitnessStore();
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [tempSelectedExercises, setTempSelectedExercises] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
+
+  const exerciseStats = React.useMemo(() => {
+    const stats: Record<string, { count: number; lastDate: string }> = {};
+    const sortedWorkouts = [...workouts].sort((a, b) => a.date.localeCompare(b.date));
+    for (const workout of sortedWorkouts) {
+      for (const ex of workout.exercises) {
+        if (!stats[ex.exerciseId]) {
+          stats[ex.exerciseId] = { count: 0, lastDate: '' };
+        }
+        stats[ex.exerciseId].count += 1;
+        stats[ex.exerciseId].lastDate = workout.date;
+      }
+    }
+    return stats;
+  }, [workouts]);
 
   const categories = ['Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps'] as const;
 
@@ -165,20 +180,32 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
   return (
     <AnimatedPage>
       <div className="max-w-3xl mx-auto space-y-8">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-200/50 rounded-full text-slate-500 transition-colors shadow-sm bg-white"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Edit Workout</h1>
-            <p className="text-slate-500 text-sm">Update your recorded sets and reps.</p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 hover:bg-slate-200/50 rounded-full text-slate-500 transition-colors shadow-sm bg-white"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Edit Workout</h1>
+              <p className="text-slate-500 text-sm">Update your recorded sets and reps.</p>
+            </div>
           </div>
+          <button
+            type="submit"
+            disabled={saving}
+            form="workout-edit-form"
+            className="md:hidden inline-flex items-center justify-center p-2.5 rounded-xl skeuo-btn-orange text-white disabled:opacity-50 shadow-md border border-orange-500/80"
+            title="Save Changes"
+          >
+            <Save className="w-5.5 h-5.5" />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form id="workout-edit-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="neu-card p-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -398,7 +425,14 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
                         )}
                         <div>
                           <h4 className="font-bold text-slate-800 text-sm">{ex.name}</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">{ex.category} &middot; {ex.primaryMuscle}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {ex.category} &middot; {ex.primaryMuscle}
+                            {exerciseStats[ex.id]?.count > 0 && (
+                              <span className="text-primary-600 font-medium">
+                                {` · Logged ${exerciseStats[ex.id].count}x (Last: ${exerciseStats[ex.id].lastDate})`}
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </div>
                     </button>

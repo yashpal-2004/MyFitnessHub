@@ -50,10 +50,11 @@ export const CalendarView: React.FC = () => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const firstDayIndex = new Date(year, month, 1).getDay();
+  const adjustedFirstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
   const totalDays = new Date(year, month + 1, 0).getDate();
 
   const daysArray: (number | null)[] = [];
-  for (let i = 0; i < firstDayIndex; i++) daysArray.push(null);
+  for (let i = 0; i < adjustedFirstDayIndex; i++) daysArray.push(null);
   for (let i = 1; i <= totalDays; i++) daysArray.push(i);
 
   const workoutsByDate = workouts.reduce((map, w) => {
@@ -153,7 +154,7 @@ export const CalendarView: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-7 text-center gap-2 mb-2">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
                 <span key={d} className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{d}</span>
               ))}
             </div>
@@ -164,7 +165,7 @@ export const CalendarView: React.FC = () => {
                   ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                   : '';
                 const hasWorkout = day ? workoutsByDate[dateStr]?.length > 0 : false;
-                const isSunday = idx % 7 === 0;
+                const isSunday = idx % 7 === 6;
 
                 return (
                   <div key={idx} className="flex justify-center items-center">
@@ -235,7 +236,7 @@ const WorkoutDetailCard: React.FC<WorkoutDetailCardProps> = ({ workout, deleting
 
   if (editing) {
     return (
-      <div className="fixed inset-0 bg-[#f0f2f5] z-40 overflow-y-auto p-4 md:p-8">
+      <div className="fixed inset-0 bg-[#f0f2f5] z-[60] overflow-y-auto p-4 md:p-8">
         <WorkoutEditPage workout={workout} onClose={() => setEditing(false)} />
       </div>
     );

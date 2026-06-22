@@ -36,11 +36,26 @@ interface WorkoutFormInput {
 
 export const WorkoutLogger: React.FC = () => {
   const navigate = useNavigate();
-  const { addWorkout, isLoading } = useFitnessStore();
+  const { addWorkout, isLoading, workouts } = useFitnessStore();
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [tempSelectedExercises, setTempSelectedExercises] = useState<{ id: string; name: string }[]>([]);
+
+  const exerciseStats = React.useMemo(() => {
+    const stats: Record<string, { count: number; lastDate: string }> = {};
+    const sortedWorkouts = [...workouts].sort((a, b) => a.date.localeCompare(b.date));
+    for (const workout of sortedWorkouts) {
+      for (const ex of workout.exercises) {
+        if (!stats[ex.exerciseId]) {
+          stats[ex.exerciseId] = { count: 0, lastDate: '' };
+        }
+        stats[ex.exerciseId].count += 1;
+        stats[ex.exerciseId].lastDate = workout.date;
+      }
+    }
+    return stats;
+  }, [workouts]);
 
   const categories = ['Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps'] as const;
 
@@ -383,7 +398,14 @@ export const WorkoutLogger: React.FC = () => {
                         )}
                         <div>
                           <h4 className="font-bold text-slate-800 text-sm">{ex.name}</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">{ex.category} &middot; {ex.primaryMuscle}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {ex.category} &middot; {ex.primaryMuscle}
+                            {exerciseStats[ex.id]?.count > 0 && (
+                              <span className="text-primary-600 font-medium">
+                                {` · Logged ${exerciseStats[ex.id].count}x (Last: ${exerciseStats[ex.id].lastDate})`}
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </div>
                     </button>

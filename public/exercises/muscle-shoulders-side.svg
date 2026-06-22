@@ -1,0 +1,104 @@
+<svg width="300" height="530" viewBox="0 0 300 530" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Body Background Outline (Muscular Male Side Profile - Proportional Depth) -->
+  <g stroke="#0D173D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="white">
+    <!-- Main Body Shape: Head, Neck, Traps, Back, Glutes, Legs, Feet, Shin, Quads, Abs, Chest, Neck Front -->
+    <path d="
+      M 142 42 
+      C 156 42, 172 45, 172 58 
+      C 172 70, 168 85, 158 92 
+      C 152 98, 144 98, 138 98
+      C 134 98, 130 96, 126 92
+      C 122 88, 114 86, 108 86
+      C 104 86, 101 89, 101 93
+      C 101 97, 106 99, 105 103
+      C 104 106, 96 108, 102 112
+      C 108 116, 112 116, 118 116
+      C 124 116, 128 122, 130 128
+      C 132 134, 136 136, 138 136
+      
+      C 148 136, 178 130, 192 145
+      C 202 160, 206 185, 202 210
+      C 198 235, 182 255, 188 268
+      C 194 280, 212 288, 212 308
+      C 212 328, 195 342, 185 362
+      C 175 380, 172 405, 168 425
+      C 164 445, 175 462, 176 480
+      C 178 498, 171 508, 168 514
+      L 182 518
+      L 105 518
+      L 115 514
+      
+      C 112 498, 110 478, 108 458
+      C 106 438, 98 420, 95 405
+      C 86 380, 82 355, 90 330
+      C 98 305, 102 288, 102 272
+      C 102 256, 95 238, 95 220
+      C 95 202, 98 185, 96 170
+      C 94 155, 82 146, 85 134
+      C 88 122, 102 122, 108 122
+      C 114 122, 118 114, 120 106
+      Z
+    " />
+
+    <!-- Left Leg / Calf muscle line for realism -->
+    <path d="M 160 395 C 168 410, 170 430, 165 445" />
+    
+    <!-- Glute fold line -->
+    <path d="M 188 318 C 178 324, 170 332, 168 345" />
+
+    <!-- Muscular Chest (Pec) contour line -->
+    <path d="M 124 122 C 112 132, 104 145, 108 158 C 112 170, 126 175, 140 175" />
+    
+    <!-- Abdominals (Abs) horizontal line highlights -->
+    <path d="M 108 190 C 115 192, 125 192, 130 190" />
+    <path d="M 109 208 C 116 210, 126 210, 131 208" />
+    <path d="M 108 226 C 115 228, 125 228, 130 226" />
+    
+    <!-- Lat / Back muscle contour -->
+    <path d="M 188 150 C 178 170, 170 195, 172 220" />
+    
+    <!-- Arm outline overlay (Bicep, Tricep, Forearm) hanging slightly forward/natural -->
+    <path d="
+      M 136 175
+      C 132 195, 128 220, 132 240
+      C 135 255, 142 275, 142 295
+      C 142 310, 136 320, 139 330
+      L 146 330
+      C 149 320, 147 310, 147 295
+      C 147 275, 154 255, 154 240
+      C 154 220, 150 195, 147 175
+    " />
+  </g>
+
+  <!-- Real Shoulder Anatomy (Three Deltoid Heads sitting as a cap) -->
+  <!-- Posterior Deltoid (Rear Delt) - Back position -->
+  <path d="
+    M 148 136
+    C 160 140, 172 145, 173 154
+    C 174 165, 166 172, 154 175
+    C 145 168, 145 152, 146 142
+    Z
+  " fill="#1570EF" stroke="#0D173D" stroke-width="1.5" stroke-linejoin="round" />
+
+  <!-- Lateral Deltoid (Side Delt) - Middle position -->
+  <path d="
+    M 138 130
+    C 146 138, 152 145, 150 175
+    C 141 178, 133 172, 133 160
+    C 133 145, 135 138, 138 130
+    Z
+  " fill="#1570EF" stroke="#0D173D" stroke-width="1.5" stroke-linejoin="round" />
+
+  <!-- Anterior Deltoid (Front Delt) - Front position -->
+  <path d="
+    M 126 134
+    C 134 137, 134 145, 133 160
+    C 131 175, 120 179, 116 164
+    C 114 150, 118 140, 126 134
+    Z
+  " fill="#1570EF" stroke="#0D173D" stroke-width="1.5" stroke-linejoin="round" />
+
+  <!-- Fine muscle separation lines over deltoids -->
+  <path d="M 138 130 L 142 176" stroke="#0D173D" stroke-width="1" />
+  <path d="M 148 136 L 150 175" stroke="#0D173D" stroke-width="1" />
+</svg>

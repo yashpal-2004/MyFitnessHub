@@ -34,7 +34,37 @@ export const Dashboard: React.FC = () => {
   // Calculations
   const totalWorkouts = workouts.length;
   const currentWeight = bodyWeights.length > 0 ? bodyWeights[0].weight : null;
-  const totalPrs = personalRecords.length;
+  const groupedPrs = React.useMemo(() => {
+    const groups: Record<string, {
+      exerciseId: string;
+      exerciseName: string;
+      weightPr?: typeof personalRecords[0];
+      volumePr?: typeof personalRecords[0];
+      latestDate: string;
+    }> = {};
+
+    personalRecords.forEach(pr => {
+      if (!groups[pr.exerciseId]) {
+        groups[pr.exerciseId] = {
+          exerciseId: pr.exerciseId,
+          exerciseName: pr.exerciseName,
+          latestDate: pr.date
+        };
+      }
+      if (pr.type === 'weight') {
+        groups[pr.exerciseId].weightPr = pr;
+      } else if (pr.type === 'volume') {
+        groups[pr.exerciseId].volumePr = pr;
+      }
+      if (pr.date > groups[pr.exerciseId].latestDate) {
+        groups[pr.exerciseId].latestDate = pr.date;
+      }
+    });
+
+    return Object.values(groups);
+  }, [personalRecords]);
+
+  const totalPrs = groupedPrs.length;
 
   const totalExercisesLogged = workouts.reduce((total, w) => {
     return total + w.exercises.length;
@@ -44,10 +74,20 @@ export const Dashboard: React.FC = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const todayWorkout = workouts.find(w => w.date === todayStr);
 
-  // Workouts in the last 7 days (Weekly frequency)
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  const weeklyWorkouts = workouts.filter(w => new Date(w.date) >= oneWeekAgo).length;
+  // Workouts in the current week starting from Monday
+  const getMondayDateString = () => {
+    const today = new Date();
+    const day = today.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - diff);
+    const yyyy = monday.getFullYear();
+    const mm = String(monday.getMonth() + 1).padStart(2, '0');
+    const dd = String(monday.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+  const mondayStr = getMondayDateString();
+  const weeklyWorkouts = workouts.filter(w => w.date >= mondayStr).length;
 
   // Workouts in current calendar month
   const currentMonth = new Date().getMonth();
@@ -116,9 +156,8 @@ export const Dashboard: React.FC = () => {
             animate="show"
             className="grid grid-cols-2 lg:grid-cols-4 gap-4"
           >
-            <motion.div 
-              variants={cardVariants} 
-              onClick={() => { if (personalRecords.length > 0) setShowAllPrs(true); }}
+            <Link 
+              to="/history"
               className="neu-card p-5 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01] transition-all duration-150 cursor-pointer"
             >
               <div className="flex items-center justify-between">
@@ -131,7 +170,7 @@ export const Dashboard: React.FC = () => {
                 <span className="text-3xl font-extrabold text-slate-800 tracking-tight">{totalWorkouts}</span>
                 <span className="text-xs text-slate-400 block mt-1">All time logged</span>
               </div>
-            </motion.div>
+            </Link>
 
             <motion.div variants={cardVariants} className="neu-card p-5 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01] transition-all duration-150">
               <div className="flex items-center justify-between">
@@ -339,15 +378,24 @@ export const Dashboard: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {personalRecords.slice(0, 3).map((pr) => (
-                    <div key={pr.id} className="flex items-center justify-between p-3 neu-card-inset">
+                  {groupedPrs.slice(0, 3).map((pr) => (
+                    <div key={pr.exerciseId} className="flex items-center justify-between p-3 neu-card-inset">
                       <div>
                         <h4 className="font-bold text-slate-800 text-xs">{pr.exerciseName}</h4>
-                        <span className="text-[10px] text-slate-450">{pr.date}</span>
+                        <span className="text-[10px] text-slate-450">{pr.latestDate}</span>
                       </div>
-                      <span className="bg-gradient-to-b from-yellow-400 to-yellow-600 text-white font-extrabold text-xs px-2.5 py-1 rounded-lg shadow-skeuo-button border border-yellow-500/50">
-                        {pr.value} {pr.type === 'weight' ? 'kg' : 'vol'}
-                      </span>
+                      <div className="flex gap-1">
+                        {pr.weightPr && (
+                          <span className="bg-gradient-to-b from-yellow-400 to-yellow-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded shadow-skeuo-button border border-yellow-500/50">
+                            {pr.weightPr.value} kg
+                          </span>
+                        )}
+                        {pr.volumePr && (
+                          <span className="bg-gradient-to-b from-orange-400 to-orange-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded shadow-skeuo-button border border-orange-500/50">
+                            {pr.volumePr.value} vol
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -375,15 +423,24 @@ export const Dashboard: React.FC = () => {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto divide-y divide-slate-200/30 p-4 space-y-3">
-              {personalRecords.map((pr) => (
-                <div key={pr.id} className="flex items-center justify-between p-3.5 neu-card-inset first:mt-0">
+              {groupedPrs.map((pr) => (
+                <div key={pr.exerciseId} className="flex items-center justify-between p-3.5 neu-card-inset first:mt-0">
                   <div>
                     <h4 className="font-bold text-slate-850 text-sm">{pr.exerciseName}</h4>
-                    <span className="text-xs text-slate-400 font-medium block mt-0.5">Achieved on: {pr.date}</span>
+                    <span className="text-xs text-slate-400 font-medium block mt-0.5">Achieved: {pr.latestDate}</span>
                   </div>
-                  <span className="bg-gradient-to-b from-yellow-400 to-yellow-600 text-white font-extrabold text-sm px-3.5 py-1.5 rounded-xl shadow-skeuo-button border border-yellow-500/50">
-                    {pr.value} {pr.type === 'weight' ? 'kg' : 'vol'}
-                  </span>
+                  <div className="flex gap-1.5">
+                    {pr.weightPr && (
+                      <span className="bg-gradient-to-b from-yellow-400 to-yellow-600 text-white font-extrabold text-xs px-2.5 py-1 rounded-lg shadow-skeuo-button border border-yellow-500/50">
+                        {pr.weightPr.value} kg
+                      </span>
+                    )}
+                    {pr.volumePr && (
+                      <span className="bg-gradient-to-b from-orange-400 to-orange-600 text-white font-extrabold text-xs px-2.5 py-1 rounded-lg shadow-skeuo-button border border-orange-500/50">
+                        {pr.volumePr.value} vol
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
