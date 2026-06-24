@@ -6,10 +6,8 @@ import {
   Calendar, 
   LineChart, 
   Scale, 
-  PlusCircle,
   WifiOff,
   RefreshCw,
-  Trophy,
   History,
   Target
 } from 'lucide-react';
