@@ -67,3 +67,14 @@
   @apply bg-gradient-to-b from-white to-slate-100 hover:from-slate-50 hover:to-slate-200 active:from-slate-200 active:to-slate-300 text-slate-700 font-medium shadow-skeuo-button active:shadow-skeuo-button-active border border-slate-200/80 rounded-xl transition-all duration-150;
 }
 
+.scrollbar-none {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+
+
+

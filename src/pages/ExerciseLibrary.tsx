@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { EXERCISES } from '../constants/exercises';
 import type { Exercise } from '../types';
 import { AnimatedPage } from '../components/AnimatedPage';
-import { Search, Info, AlertTriangle } from 'lucide-react';
+import { Search, Info, AlertTriangle, Archive, ArchiveRestore } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 import { toGymMuscleName } from '../utils/muscleMapper';
 
@@ -21,14 +21,15 @@ const getMuscleGroupImageUrl = (category: string) => {
 
 export const ExerciseLibrary: React.FC = () => {
   const location = useLocation();
-  const initialCategory = (location.state as any)?.category || 'Chest';
+  const initialCategory = (location.state as any)?.category || 'All';
   const initialSearch = (location.state as any)?.search || '';
 
-  const categories = ['Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps'] as const;
+  const categories = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps'] as const;
   const [selectedCategory, setSelectedCategory] = useState<typeof categories[number]>(initialCategory);
   const [selectedMuscle, setSelectedMuscle] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   // Sync state with location state
   useEffect(() => {
@@ -53,7 +54,7 @@ export const ExerciseLibrary: React.FC = () => {
     }
   }, [location.state]);
 
-  const { workouts, personalRecords, initialize } = useFitnessStore();
+  const { workouts, personalRecords, initialize, archivedExerciseIds, toggleArchiveExercise } = useFitnessStore();
 
   useEffect(() => {
     initialize();
@@ -97,34 +98,37 @@ export const ExerciseLibrary: React.FC = () => {
   const categoryMusclesList = React.useMemo(() => {
     const muscles = new Set<string>();
     EXERCISES.forEach(ex => {
-      if (ex.category === selectedCategory) {
+      if (selectedCategory === 'All' || ex.category === selectedCategory) {
+        if (!showArchived && archivedExerciseIds?.includes(ex.id)) return;
         muscles.add(toGymMuscleName(ex.primaryMuscle));
       }
     });
     return Array.from(muscles).sort();
-  }, [selectedCategory]);
+  }, [selectedCategory, showArchived, archivedExerciseIds]);
 
   // Compute exercise counts for each muscle in selectedCategory
   const muscleCounts = React.useMemo(() => {
     const counts: Record<string, number> = { All: 0 };
     EXERCISES.forEach(ex => {
-      if (ex.category === selectedCategory) {
+      if (selectedCategory === 'All' || ex.category === selectedCategory) {
+        if (!showArchived && archivedExerciseIds?.includes(ex.id)) return;
         const gymMuscle = toGymMuscleName(ex.primaryMuscle);
         counts.All = (counts.All || 0) + 1;
         counts[gymMuscle] = (counts[gymMuscle] || 0) + 1;
       }
     });
     return counts;
-  }, [selectedCategory]);
+  }, [selectedCategory, showArchived, archivedExerciseIds]);
 
   // Filter exercises by category, muscle, and search query
   const filteredExercises = EXERCISES.filter(ex => {
     const gymMuscle = toGymMuscleName(ex.primaryMuscle);
-    const matchesCategory = ex.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'All' || ex.category === selectedCategory;
     const matchesMuscle = selectedMuscle === 'All' || gymMuscle === selectedMuscle;
     const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gymMuscle.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesMuscle && matchesSearch;
+    const matchesArchive = showArchived || !archivedExerciseIds?.includes(ex.id);
+    return matchesCategory && matchesMuscle && matchesSearch && matchesArchive;
   });
 
   // Group filtered exercises by primaryMuscle (using gym-friendly names)
@@ -196,6 +200,26 @@ export const ExerciseLibrary: React.FC = () => {
                   <span className="text-xs font-bold text-primary-500 uppercase tracking-widest">{selectedExercise.category}</span>
                   <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-1">{selectedExercise.name}</h2>
                   <div className="flex flex-wrap gap-2 mt-3">
+                    <button
+                      onClick={() => toggleArchiveExercise(selectedExercise.id)}
+                      className={`text-xs px-3 py-1.5 rounded-lg font-semibold border flex items-center gap-1 shadow-sm transition-all duration-150 ${
+                        archivedExerciseIds?.includes(selectedExercise.id)
+                          ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                          : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                      }`}
+                    >
+                      {archivedExerciseIds?.includes(selectedExercise.id) ? (
+                        <>
+                          <ArchiveRestore className="w-3.5 h-3.5" />
+                          Unarchive Exercise
+                        </>
+                      ) : (
+                        <>
+                          <Archive className="w-3.5 h-3.5" />
+                          Archive Exercise
+                        </>
+                      )}
+                    </button>
                     <span className="text-xs neu-card-inset px-3 py-1.5 font-semibold border-none">
                       Equipment: {selectedExercise.equipment}
                     </span>
@@ -279,9 +303,10 @@ export const ExerciseLibrary: React.FC = () => {
           {/* Tabs */}
           <div className="neu-card-inset flex gap-1.5 p-1.5 overflow-x-auto scrollbar-none max-w-full md:max-w-3xl">
             {categories.map((cat) => {
-              const total = EXERCISES.filter(ex => ex.category === cat).length;
+              const total = EXERCISES.filter(ex => (cat === 'All' || ex.category === cat) && (showArchived || !archivedExerciseIds?.includes(ex.id))).length;
               const filtered = EXERCISES.filter(ex => 
-                ex.category === cat && 
+                (cat === 'All' || ex.category === cat) && 
+                (showArchived || !archivedExerciseIds?.includes(ex.id)) &&
                 (ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                  toGymMuscleName(ex.primaryMuscle).toLowerCase().includes(searchQuery.toLowerCase()))
               ).length;
@@ -320,31 +345,47 @@ export const ExerciseLibrary: React.FC = () => {
           </div>
         </div>
 
-        {/* Muscle Filter Pills Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 -mt-4">
-          <button
-            onClick={() => setSelectedMuscle('All')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-              selectedMuscle === 'All'
-                ? 'shadow-neu-inset bg-[#d8dce2] text-slate-850 border-slate-350/50'
-                : 'glass-card border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            All Muscles <span className="text-[10px] opacity-60 ml-0.5">({muscleCounts.All})</span>
-          </button>
-          {categoryMusclesList.map((muscle) => (
+        {/* Muscle Filter Pills Bar and Show Archived Toggle */}
+        <div className="flex flex-row items-center justify-between gap-4 -mt-4 w-full overflow-hidden">
+          <div className="flex flex-row flex-nowrap items-center gap-2 overflow-x-auto scrollbar-none py-1 flex-1 min-w-0">
             <button
-              key={muscle}
-              onClick={() => setSelectedMuscle(muscle)}
+              onClick={() => setSelectedMuscle('All')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border whitespace-nowrap ${
-                selectedMuscle === muscle
+                selectedMuscle === 'All'
                   ? 'shadow-neu-inset bg-[#d8dce2] text-slate-850 border-slate-350/50'
                   : 'glass-card border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
-              {muscle} <span className="text-[10px] opacity-60 ml-0.5">({muscleCounts[muscle] || 0})</span>
+              All Muscles <span className="text-[10px] opacity-60 ml-0.5">({muscleCounts.All})</span>
             </button>
-          ))}
+            {categoryMusclesList.map((muscle) => (
+              <button
+                key={muscle}
+                onClick={() => setSelectedMuscle(muscle)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border whitespace-nowrap ${
+                  selectedMuscle === muscle
+                    ? 'shadow-neu-inset bg-[#d8dce2] text-slate-850 border-slate-350/50'
+                    : 'glass-card border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {muscle} <span className="text-[10px] opacity-60 ml-0.5">({muscleCounts[muscle] || 0})</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-end flex-shrink-0">
+            <button
+              onClick={() => setShowArchived(prev => !prev)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 shadow-sm ${
+                showArchived
+                  ? 'bg-rose-50 border-rose-200 text-rose-750'
+                  : 'bg-[#e8ebf0] border-slate-350/20 text-slate-600 hover:bg-slate-200/50'
+              }`}
+            >
+              <Archive className="w-3.5 h-3.5" />
+              {showArchived ? 'Hide Archived' : 'Show Archived'}
+            </button>
+          </div>
         </div>
 
         {/* Exercises Grid */}
@@ -366,31 +407,50 @@ export const ExerciseLibrary: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {exercises.map((ex) => (
-                    <div
-                      key={ex.id}
-                      onClick={() => setSelectedExercise(ex)}
-                      className="neu-card p-5 hover:scale-[1.01] transition-all duration-150 cursor-pointer flex flex-col justify-between group"
-                    >
-                      <div>
-                        {/* Exercise image preview */}
-                        <div className="aspect-[4/3] neu-card-inset mb-4 flex items-center justify-center overflow-hidden relative">
-                          <img 
-                            src={ex.image} 
-                            alt={ex.name} 
-                            className="w-full h-full object-contain p-2 group-hover:scale-[1.03] transition-all duration-300"
-                            loading="lazy"
-                          />
-                        </div>
+                  {exercises.map((ex) => {
+                    const isArchived = archivedExerciseIds?.includes(ex.id);
+                    return (
+                      <div
+                        key={ex.id}
+                        onClick={() => setSelectedExercise(ex)}
+                        className={`neu-card p-5 hover:scale-[1.01] transition-all duration-150 cursor-pointer flex flex-col justify-between group ${
+                          isArchived ? 'opacity-60 hover:opacity-100' : ''
+                        }`}
+                      >
+                        <div>
+                          {/* Exercise image preview */}
+                          <div className="aspect-[4/3] neu-card-inset mb-4 flex items-center justify-center overflow-hidden relative">
+                            <img 
+                              src={ex.image} 
+                              alt={ex.name} 
+                              className="w-full h-full object-contain p-2 group-hover:scale-[1.03] transition-all duration-300"
+                              loading="lazy"
+                            />
+                            {isArchived && (
+                              <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[1px] flex items-center justify-center">
+                                <span className="bg-rose-500/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-md">
+                                  <Archive className="w-3.5 h-3.5" />
+                                  Archived
+                                </span>
+                              </div>
+                            )}
+                          </div>
 
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-bold text-slate-800 group-hover:text-primary-500 transition-colors leading-snug">
-                            {ex.name}
-                          </h3>
-                          <span className={`text-[10px] font-bold px-2 py-1 rounded-md border ${getDifficultyBadgeColor(ex.difficulty)}`}>
-                            {ex.difficulty}
-                          </span>
-                        </div>
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="font-bold text-slate-800 group-hover:text-primary-500 transition-colors leading-snug">
+                              {ex.name}
+                            </h3>
+                            <div className="flex gap-1.5">
+                              {isArchived && (
+                                <span className="text-[10px] font-bold px-2 py-1 rounded-md border bg-rose-50 text-rose-700 border-rose-100 flex items-center gap-0.5">
+                                  Archived
+                                </span>
+                              )}
+                              <span className={`text-[10px] font-bold px-2 py-1 rounded-md border ${getDifficultyBadgeColor(ex.difficulty)}`}>
+                                {ex.difficulty}
+                              </span>
+                            </div>
+                          </div>
 
                         <div className="mt-4 space-y-1.5 border-t border-slate-200/40 pt-3">
                           <div className="flex items-center gap-1.5 text-xs">
@@ -436,12 +496,38 @@ export const ExerciseLibrary: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="mt-5 pt-3 border-t border-slate-200/40 flex items-center justify-between text-xs font-bold text-primary-550">
-                        <span>View execution steps</span>
-                        <Info className="w-4 h-4 text-primary-500" />
+                      <div className="mt-5 pt-3 border-t border-slate-200/40 flex items-center justify-between gap-2 text-xs font-bold">
+                        <span className="text-primary-550 flex items-center gap-1">
+                          View execution steps
+                          <Info className="w-3.5 h-3.5 text-primary-500 inline" />
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleArchiveExercise(ex.id);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg border font-bold flex items-center gap-1 shadow-sm transition-all duration-150 ${
+                            isArchived
+                              ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                              : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                          }`}
+                        >
+                          {isArchived ? (
+                            <>
+                              <ArchiveRestore className="w-3.5 h-3.5" />
+                              Unarchive
+                            </>
+                          ) : (
+                            <>
+                              <Archive className="w-3.5 h-3.5" />
+                              Archive
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               </div>
             ))}

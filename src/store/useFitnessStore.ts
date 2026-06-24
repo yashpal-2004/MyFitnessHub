@@ -32,6 +32,7 @@ interface FitnessState {
   syncStatus: 'idle' | 'syncing' | 'error';
   lastSynced: string | null;
   pendingActions: PendingAction[];
+  archivedExerciseIds: string[];
   
   initialize: () => Promise<void>;
   addWorkout: (workout: Omit<Workout, 'id' | 'clientId'>) => Promise<void>;
@@ -43,6 +44,7 @@ interface FitnessState {
   triggerSync: () => Promise<void>;
   setOnlineStatus: (status: boolean) => void;
   syncPrsToFirestore: (newPrs: Omit<PersonalRecord, 'id'>[]) => Promise<void>;
+  toggleArchiveExercise: (id: string) => void;
 }
 
 const computePersonalRecords = (workouts: Workout[], clientId: string): Omit<PersonalRecord, 'id'>[] => {
@@ -117,6 +119,15 @@ export const useFitnessStore = create<FitnessState>()(
       syncStatus: 'idle',
       lastSynced: null,
       pendingActions: [],
+      archivedExerciseIds: [],
+
+      toggleArchiveExercise: (id) => {
+        set((state) => ({
+          archivedExerciseIds: state.archivedExerciseIds.includes(id)
+            ? state.archivedExerciseIds.filter(x => x !== id)
+            : [...state.archivedExerciseIds, id]
+        }));
+      },
 
       setOnlineStatus: (status) => {
         set({ isOnline: status });
@@ -605,6 +616,7 @@ export const useFitnessStore = create<FitnessState>()(
         personalRecords: state.personalRecords,
         pendingActions: state.pendingActions,
         lastSynced: state.lastSynced,
+        archivedExerciseIds: state.archivedExerciseIds,
       }),
     }
   )

@@ -1012,6 +1012,29 @@ export const EXERCISES: ExerciseWithImage[] = [
     "image": "/exercises/seated-behind-neck-barbell-press.png"
   },
   {
+    "id": "reverse-pec-deck",
+    "name": "Reverse Pec Deck (Rear Delt Fly)",
+    "category": "Back",
+    "primaryMuscle": "Rear Deltoids",
+    "secondaryMuscles": [
+      "Upper Back"
+    ],
+    "equipment": "Machine",
+    "difficulty": "Beginner",
+    "instructions": [
+      "Adjust the seat so the handles are at shoulder height.",
+      "Sit facing the machine pad with chest pressed flat against it.",
+      "Grip the handles with arms extended forward.",
+      "Pull your arms back in a wide arc until they are in line with your shoulders.",
+      "Slowly return to the starting position."
+    ],
+    "commonMistakes": [
+      "Shrugging the shoulders up during the movement",
+      "Bending the elbows too much"
+    ],
+    "image": "/exercises/reverse-pec-deck.png"
+  },
+  {
     "id": "dumbbell-bent-over-row-single-arm",
     "name": "Dumbbell Bent-Over Row (Single Arm)",
     "category": "Back",

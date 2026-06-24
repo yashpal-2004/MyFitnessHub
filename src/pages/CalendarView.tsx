@@ -13,6 +13,7 @@ import {
   Pencil
 } from 'lucide-react';
 import type { Workout } from '../types';
+import { EXERCISES } from '../constants/exercises';
 import { WorkoutEditPage } from './WorkoutEditPage';
 
 export const CalendarView: React.FC = () => {
@@ -242,6 +243,30 @@ const WorkoutDetailCard: React.FC<WorkoutDetailCardProps> = ({ workout, deleting
     );
   }
 
+  const totalVolume = workout.exercises.reduce((t, e) => t + e.sets.reduce((sVol, s) => sVol + (Number(s.weight || 0) * Number(s.reps || 0)), 0), 0);
+
+  const categoryVolumes = workout.exercises.reduce((acc, ex) => {
+    const globalEx = EXERCISES.find(e => e.id === ex.exerciseId);
+    const category = globalEx ? globalEx.category : 'Other';
+    const volume = ex.sets.reduce((sum, s) => sum + (Number(s.weight || 0) * Number(s.reps || 0)), 0);
+    acc[category] = (acc[category] || 0) + volume;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const breakdownString = Object.entries(categoryVolumes)
+    .map(([cat, vol]) => `${cat}: ${vol.toLocaleString()} kg`)
+    .join(' · ');
+
+  const groupedExercises = workout.exercises.reduce((groups, ex) => {
+    const globalEx = EXERCISES.find(e => e.id === ex.exerciseId);
+    const category = globalEx ? globalEx.category : 'Other';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(ex);
+    return groups;
+  }, {} as Record<string, typeof workout.exercises>);
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-2">
@@ -256,13 +281,21 @@ const WorkoutDetailCard: React.FC<WorkoutDetailCardProps> = ({ workout, deleting
               ))}
             </div>
           )}
-          <div className="flex items-center gap-3 text-slate-400 text-[10px] font-bold mt-1 uppercase">
+          <div className="flex flex-wrap items-center gap-3 text-slate-400 text-[10px] font-bold mt-1 uppercase">
             <span className="flex items-center gap-0.5">
               <Clock className="w-3.5 h-3.5" /> {workout.durationMinutes} min
             </span>
             <span>&middot;</span>
             <span>{workout.exercises.length} Exercises</span>
+            <span>&middot;</span>
+            <span title="Total Volume">Vol: {totalVolume.toLocaleString()} kg</span>
           </div>
+          {breakdownString && (
+            <p className="text-[10px] text-slate-500 mt-1.5 font-semibold">
+              <span className="text-slate-400 font-bold uppercase tracking-wider text-[8px] mr-1">Breakdown:</span>
+              {breakdownString}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
@@ -290,15 +323,24 @@ const WorkoutDetailCard: React.FC<WorkoutDetailCardProps> = ({ workout, deleting
         </p>
       )}
 
-      <div className="space-y-3">
-        {workout.exercises.map((ex, exIdx) => (
-          <div key={exIdx} className="border-t border-slate-200/40 pt-2.5">
-            <h5 className="font-bold text-xs text-slate-700">{ex.exerciseName}</h5>
-            <div className="flex flex-wrap gap-1.5 mt-1.5">
-              {ex.sets.map((set, setIdx) => (
-                <span key={setIdx} className="neu-card-inset text-slate-600 text-[10px] font-semibold px-2 py-1 border-none">
-                  Set {setIdx + 1}: {set.weight}kg × {set.reps}{set.rpe ? ` (RPE ${set.rpe})` : ''}
-                </span>
+      <div className="space-y-4">
+        {Object.entries(groupedExercises).map(([category, exercises]) => (
+          <div key={category} className="space-y-2">
+            <h5 className="text-[10px] font-black text-primary-600 uppercase tracking-wider bg-primary-50/50 border border-primary-100/50 px-2 py-0.5 rounded-md w-fit">
+              {category}
+            </h5>
+            <div className="space-y-3 pl-3 border-l border-slate-200/60">
+              {exercises.map((ex, exIdx) => (
+                <div key={exIdx} className="pt-0.5 first:pt-0">
+                  <h6 className="font-bold text-xs text-slate-700">{ex.exerciseName}</h6>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {ex.sets.map((set, setIdx) => (
+                      <span key={setIdx} className="neu-card-inset text-slate-600 text-[10px] font-semibold px-2 py-1 border-none">
+                        Set {setIdx + 1}: {set.weight}kg × {set.reps}{set.rpe ? ` (RPE ${set.rpe})` : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>

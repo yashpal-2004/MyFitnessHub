@@ -66,9 +66,25 @@ export const Dashboard: React.FC = () => {
 
   const totalPrs = groupedPrs.length;
 
-  const totalExercisesLogged = workouts.reduce((total, w) => {
-    return total + w.exercises.length;
-  }, 0);
+  const uniqueExercisesTrackedCount = React.useMemo(() => {
+    const ids = new Set<string>();
+    workouts.forEach(w => {
+      w.exercises.forEach(ex => {
+        ids.add(ex.exerciseId);
+      });
+    });
+    return ids.size;
+  }, [workouts]);
+
+  const totalSetsCompleted = React.useMemo(() => {
+    let sets = 0;
+    workouts.forEach(w => {
+      w.exercises.forEach(ex => {
+        sets += ex.sets.length;
+      });
+    });
+    return sets;
+  }, [workouts]);
 
   // Today's Date
   const todayStr = new Date().toISOString().split('T')[0];
@@ -216,8 +232,8 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
               <div className="mt-4">
-                <span className="text-3xl font-extrabold text-slate-800 tracking-tight">{totalExercisesLogged}</span>
-                <span className="text-xs text-slate-400 block mt-1">Individual sets completed</span>
+                <span className="text-3xl font-extrabold text-slate-800 tracking-tight">{uniqueExercisesTrackedCount}</span>
+                <span className="text-xs text-slate-400 block mt-1">{totalSetsCompleted} individual sets completed</span>
               </div>
             </Link>
           </motion.div>
