@@ -272,15 +272,6 @@ const WorkoutDetailCard: React.FC<WorkoutDetailCardProps> = ({ workout, deleting
       <div className="flex items-start justify-between gap-2">
         <div>
           <h4 className="font-extrabold text-slate-800 text-sm">{workout.name}</h4>
-          {workout.categories && workout.categories.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1 mb-1.5">
-              {workout.categories.map((cat) => (
-                <span key={cat} className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-primary-50 text-primary-600 border border-primary-100 uppercase tracking-wider">
-                  {cat}
-                </span>
-              ))}
-            </div>
-          )}
           <div className="flex flex-wrap items-center gap-3 text-slate-400 text-[10px] font-bold mt-1 uppercase">
             <span className="flex items-center gap-0.5">
               <Clock className="w-3.5 h-3.5" /> {workout.durationMinutes} min

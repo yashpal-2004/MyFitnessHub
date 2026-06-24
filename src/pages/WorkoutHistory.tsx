@@ -183,15 +183,6 @@ const WorkoutHistoryCard: React.FC<WorkoutHistoryCardProps> = ({ workout, deleti
               {breakdownString}
             </p>
           )}
-          {workout.categories && workout.categories.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2.5">
-              {workout.categories.map((cat) => (
-                <span key={cat} className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-primary-50 text-primary-600 border border-primary-100 uppercase tracking-wider">
-                  {cat}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
