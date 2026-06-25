@@ -325,9 +325,11 @@ export const WorkoutLogger: React.FC = () => {
                 key={field.id}
                 control={control}
                 index={index}
+                exerciseId={field.exerciseId}
                 exerciseName={field.exerciseName}
                 onRemove={() => removeExercise(index)}
                 register={register}
+                setValue={setValue}
               />
             ))}
           </div>
@@ -566,16 +568,40 @@ export const WorkoutLogger: React.FC = () => {
 interface ExerciseRowProps {
   control: any;
   index: number;
+  exerciseId: string;
   exerciseName: string;
   onRemove: () => void;
   register: any;
+  setValue: any;
 }
 
-const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseName, onRemove, register }) => {
+const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, exerciseName, onRemove, register, setValue }) => {
   const { fields: setFields, append: appendSet, remove: removeSet } = useFieldArray({
     control,
     name: `exercises.${index}.sets`
   });
+  const { workouts } = useFitnessStore();
+
+  // Find the most recent workout that has this exercise
+  const lastWorkoutWithExercise = React.useMemo(() => {
+    const sorted = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
+    return sorted.find(w => w.exercises.some(ex => ex.exerciseId === exerciseId));
+  }, [workouts, exerciseId]);
+
+  const lastExerciseLog = React.useMemo(() => {
+    if (!lastWorkoutWithExercise) return null;
+    return lastWorkoutWithExercise.exercises.find(ex => ex.exerciseId === exerciseId);
+  }, [lastWorkoutWithExercise, exerciseId]);
+
+  const handleCopyLastSets = () => {
+    if (!lastExerciseLog) return;
+    const mappedSets = lastExerciseLog.sets.map(s => ({
+      reps: s.reps,
+      weight: s.weight,
+      rpe: s.rpe ?? ''
+    }));
+    setValue(`exercises.${index}.sets`, mappedSets);
+  };
 
   return (
     <div className="neu-card p-6 space-y-4">
@@ -594,6 +620,33 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseName,
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
+
+      {lastExerciseLog && (
+        <div className="p-4 rounded-xl bg-slate-100/60 border border-slate-200/50 space-y-2.5">
+          <div className="flex items-center justify-between text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3 text-slate-400" />
+              Previous sets ({lastWorkoutWithExercise?.date ? new Date(lastWorkoutWithExercise.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''})
+            </span>
+            <button
+              type="button"
+              onClick={handleCopyLastSets}
+              className="text-primary-650 hover:text-primary-750 font-bold text-[10px] hover:underline"
+            >
+              Copy Last Sets
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {lastExerciseLog.sets.map((set, sIdx) => (
+              <div key={sIdx} className="bg-white/80 px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-sm font-semibold text-xs text-slate-700">
+                <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Set {sIdx + 1}:</span>
+                {set.weight} kg × {set.reps}
+                {set.rpe ? ` (RPE ${set.rpe})` : ''}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">

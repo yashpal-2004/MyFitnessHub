@@ -294,6 +294,53 @@ export const EXERCISES: ExerciseWithImage[] = [
     "image": "/exercises/dumbbell-overhead-triceps-extension.png"
   },
   {
+    "id": "cable-rope-overhead-triceps-extension",
+    "name": "Cable Rope Overhead Triceps Extension",
+    "category": "Triceps",
+    "primaryMuscle": "Triceps",
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "equipment": "Cables",
+    "difficulty": "Intermediate",
+    "instructions": [
+      "Attach a rope to a low pulley cable station.",
+      "Grip the rope handles, turn your back to the stack, and bring your hands behind your head with elbows bent.",
+      "Step forward slightly to create tension on the cable.",
+      "Extend your arms straight overhead while keeping your elbows tucked close to your head.",
+      "Lower the weight back down with control to the starting position."
+    ],
+    "commonMistakes": [
+      "Flaring the elbows out wide",
+      "Using too much weight causing arching of the lower back"
+    ],
+    "image": "/exercises/cable-rope-overhead-triceps-extension.png"
+  },
+  {
+    "id": "standing-overhead-cable-triceps-extension-rope",
+    "name": "Standing Overhead Cable Triceps Extension (Rope)",
+    "category": "Triceps",
+    "primaryMuscle": "Triceps",
+    "secondaryMuscles": [
+      "Shoulders",
+      "Core"
+    ],
+    "equipment": "Cables",
+    "difficulty": "Intermediate",
+    "instructions": [
+      "Attach a rope to a high pulley cable station.",
+      "Grip the rope and turn away from the machine, holding the rope behind your head.",
+      "Lean your torso forward slightly and step one foot forward for stability.",
+      "Extend your arms forward and overhead by contracting your triceps.",
+      "Return slowly to the starting position."
+    ],
+    "commonMistakes": [
+      "Letting the elbows flare out to the sides",
+      "Moving the upper arms rather than bending only at the elbows"
+    ],
+    "image": "/exercises/standing-overhead-cable-triceps-extension-rope.png"
+  },
+  {
     "id": "one-arm-dumbbell-overhead-triceps-extension",
     "name": "One-Arm Dumbbell Overhead Triceps Extension",
     "category": "Triceps",
