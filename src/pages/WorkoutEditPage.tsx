@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { useFitnessStore } from '../store/useFitnessStore';
 import { AnimatedPage } from '../components/AnimatedPage';
 import type { Workout } from '../types';
@@ -535,12 +535,38 @@ interface ExerciseRowProps {
   currentWorkoutId: string;
 }
 
+const getImprovement = (current: { weight?: number; reps?: number } | undefined, previous: { weight: number; reps: number } | undefined) => {
+  if (!current || !previous) return null;
+  const curW = Number(current.weight) || 0;
+  const curR = Number(current.reps) || 0;
+  const prevW = Number(previous.weight) || 0;
+  const prevR = Number(previous.reps) || 0;
+
+  if (curW === 0 || curR === 0 || prevW === 0 || prevR === 0) return null;
+
+  if (curW > prevW) {
+    const diff = (curW - prevW).toFixed(1).replace(/\.0$/, '');
+    return { text: `+${diff} kg` };
+  } else if (curW === prevW && curR > prevR) {
+    const diff = curR - prevR;
+    return { text: `+${diff} rep${diff > 1 ? 's' : ''}` };
+  } else if (curW * curR > prevW * prevR) {
+    return { text: '🔥 Better Vol' };
+  }
+  return null;
+};
+
 const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, exerciseName, onRemove, register, setValue, currentWorkoutId }) => {
   const { fields: setFields, append: appendSet, remove: removeSet } = useFieldArray({
     control,
     name: `exercises.${index}.sets`,
   });
   const { workouts } = useFitnessStore();
+
+  const watchedSets = useWatch({
+    control,
+    name: `exercises.${index}.sets`
+  });
 
   // Find the most recent workout that has this exercise, excluding the current workout
   const lastWorkoutWithExercise = React.useMemo(() => {
@@ -618,30 +644,45 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
           <span className="col-span-2 text-center">RPE</span>
         </div>
 
-        {setFields.map((setField, setIndex) => (
-          <div key={setField.id} className="grid grid-cols-12 gap-2 items-center">
-            <span className="col-span-2 text-center text-xs font-bold text-slate-500 shadow-neu-inset bg-[#e3e6eb] py-2 rounded-lg border border-slate-200/50">
-              {setIndex + 1}
-            </span>
-            <input
-              type="number"
-              step="any"
-              {...register(`exercises.${index}.sets.${setIndex}.weight`, { required: true, valueAsNumber: true })}
-              className="col-span-4 neu-input py-2 text-center text-sm font-semibold focus:ring-1 focus:ring-primary-500/20"
-            />
-            <input
-              type="number"
-              {...register(`exercises.${index}.sets.${setIndex}.reps`, { required: true, valueAsNumber: true })}
-              className="col-span-4 neu-input py-2 text-center text-sm font-semibold focus:ring-1 focus:ring-primary-500/20"
-            />
-            <input
-              type="text"
-              placeholder="—"
-              {...register(`exercises.${index}.sets.${setIndex}.rpe`)}
-              className="col-span-2 neu-input py-2 text-center text-sm font-semibold focus:ring-1 focus:ring-primary-500/20 placeholder:text-slate-350"
-            />
-          </div>
-        ))}
+        {setFields.map((setField, setIndex) => {
+          const currentSet = watchedSets?.[setIndex];
+          const previousSet = lastExerciseLog?.sets?.[setIndex];
+          const improvement = getImprovement(currentSet, previousSet);
+
+          return (
+            <div key={setField.id} className="space-y-1">
+              <div className="grid grid-cols-12 gap-2 items-center">
+                <span className="col-span-2 text-center text-xs font-bold text-slate-500 shadow-neu-inset bg-[#e3e6eb] py-2 rounded-lg border border-slate-200/50">
+                  {setIndex + 1}
+                </span>
+                <input
+                  type="number"
+                  step="any"
+                  {...register(`exercises.${index}.sets.${setIndex}.weight`, { required: true, valueAsNumber: true })}
+                  className="col-span-4 neu-input py-2 text-center text-sm font-semibold focus:ring-1 focus:ring-primary-500/20"
+                />
+                <input
+                  type="number"
+                  {...register(`exercises.${index}.sets.${setIndex}.reps`, { required: true, valueAsNumber: true })}
+                  className="col-span-4 neu-input py-2 text-center text-sm font-semibold focus:ring-1 focus:ring-primary-500/20"
+                />
+                <input
+                  type="text"
+                  placeholder="—"
+                  {...register(`exercises.${index}.sets.${setIndex}.rpe`)}
+                  className="col-span-2 neu-input py-2 text-center text-sm font-semibold focus:ring-1 focus:ring-primary-500/20 placeholder:text-slate-350"
+                />
+              </div>
+              {improvement && (
+                <div className="flex justify-end px-2">
+                  <span className="text-[9px] text-emerald-650 font-bold bg-emerald-50 border border-emerald-250/30 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 shadow-sm animate-pulse">
+                    {improvement.text}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex gap-2 justify-between pt-2">
