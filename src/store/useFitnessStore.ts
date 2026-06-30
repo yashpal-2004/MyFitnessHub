@@ -8,14 +8,16 @@ import {
   addDoc, 
   deleteDoc, 
   doc, 
-  updateDoc
+  updateDoc,
+  getDoc,
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Workout, BodyWeight, PersonalRecord } from '../types';
 
 export interface PendingAction {
   id: string;
-  type: 'ADD_WORKOUT' | 'EDIT_WORKOUT' | 'DELETE_WORKOUT' | 'ADD_WEIGHT' | 'EDIT_WEIGHT' | 'DELETE_WEIGHT';
+  type: 'ADD_WORKOUT' | 'EDIT_WORKOUT' | 'DELETE_WORKOUT' | 'ADD_WEIGHT' | 'EDIT_WEIGHT' | 'DELETE_WEIGHT' | 'UPDATE_ARCHIVED_EXERCISES';
   payload: any;
   timestamp: number;
 }
@@ -121,12 +123,40 @@ export const useFitnessStore = create<FitnessState>()(
       pendingActions: [],
       archivedExerciseIds: [],
 
-      toggleArchiveExercise: (id) => {
-        set((state) => ({
-          archivedExerciseIds: state.archivedExerciseIds.includes(id)
-            ? state.archivedExerciseIds.filter(x => x !== id)
-            : [...state.archivedExerciseIds, id]
-        }));
+      toggleArchiveExercise: async (id) => {
+        const cId = get().clientId;
+        const current = get().archivedExerciseIds;
+        const updated = current.includes(id)
+          ? current.filter(x => x !== id)
+          : [...current, id];
+
+        // Optimistic update
+        set({ archivedExerciseIds: updated });
+
+        if (!get().isOnline) {
+          const pendingAction: PendingAction = {
+            id: 'act_' + Date.now(),
+            type: 'UPDATE_ARCHIVED_EXERCISES',
+            payload: { archivedExerciseIds: updated },
+            timestamp: Date.now()
+          };
+          set(state => ({ pendingActions: [...state.pendingActions, pendingAction] }));
+          return;
+        }
+
+        try {
+          const settingsDocRef = doc(db, 'clientSettings', cId);
+          await setDoc(settingsDocRef, { clientId: cId, archivedExerciseIds: updated }, { merge: true });
+        } catch (err: any) {
+          console.error("Failed to sync archived exercises to Firestore: ", err);
+          const pendingAction: PendingAction = {
+            id: 'act_' + Date.now(),
+            type: 'UPDATE_ARCHIVED_EXERCISES',
+            payload: { archivedExerciseIds: updated },
+            timestamp: Date.now()
+          };
+          set(state => ({ pendingActions: [...state.pendingActions, pendingAction] }));
+        }
       },
 
       setOnlineStatus: (status) => {
@@ -184,12 +214,28 @@ export const useFitnessStore = create<FitnessState>()(
             personalRecords.push({ id: doc.id, ...doc.data() } as PersonalRecord);
           });
 
+          // Fetch Client Settings (Archived Exercises)
+          let archivedExerciseIds = get().archivedExerciseIds;
+          try {
+            const settingsDocRef = doc(db, 'clientSettings', cId);
+            const settingsSnap = await getDoc(settingsDocRef);
+            if (settingsSnap.exists()) {
+              const data = settingsSnap.data();
+              if (Array.isArray(data.archivedExerciseIds)) {
+                archivedExerciseIds = data.archivedExerciseIds;
+              }
+            }
+          } catch (settingsErr) {
+            console.error("Failed to fetch client settings: ", settingsErr);
+          }
+
           // Recalculate personal records to detect and clean up any orphaned/incorrect past DB records
           const computedPrs = computePersonalRecords(workouts, cId);
 
           set({ 
             workouts, 
             bodyWeights, 
+            archivedExerciseIds,
             personalRecords: computedPrs.map(pr => {
               // Try to preserve existing Firestore ID if it matches
               const existing = personalRecords.find(p => p.exerciseId === pr.exerciseId && p.type === pr.type && p.value === pr.value && p.date === pr.date);
@@ -588,6 +634,11 @@ export const useFitnessStore = create<FitnessState>()(
               if (!actualId.startsWith('temp_')) {
                 await deleteDoc(doc(db, 'bodyWeights', actualId));
               }
+            }
+            else if (action.type === 'UPDATE_ARCHIVED_EXERCISES') {
+              const { archivedExerciseIds } = action.payload;
+              const settingsDocRef = doc(db, 'clientSettings', get().clientId);
+              await setDoc(settingsDocRef, { clientId: get().clientId, archivedExerciseIds }, { merge: true });
             }
 
             remainingActions.shift();

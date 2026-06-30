@@ -30,6 +30,7 @@ export const ExerciseLibrary: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [hideLogged, setHideLogged] = useState(false);
 
   // Sync state with location state
   useEffect(() => {
@@ -100,11 +101,12 @@ export const ExerciseLibrary: React.FC = () => {
     EXERCISES.forEach(ex => {
       if (selectedCategory === 'All' || ex.category === selectedCategory) {
         if (!showArchived && archivedExerciseIds?.includes(ex.id)) return;
+        if (hideLogged && exerciseStats[ex.id]?.count > 0) return;
         muscles.add(toGymMuscleName(ex.primaryMuscle));
       }
     });
     return Array.from(muscles).sort();
-  }, [selectedCategory, showArchived, archivedExerciseIds]);
+  }, [selectedCategory, showArchived, archivedExerciseIds, hideLogged, exerciseStats]);
 
   // Compute exercise counts for each muscle in selectedCategory
   const muscleCounts = React.useMemo(() => {
@@ -112,13 +114,14 @@ export const ExerciseLibrary: React.FC = () => {
     EXERCISES.forEach(ex => {
       if (selectedCategory === 'All' || ex.category === selectedCategory) {
         if (!showArchived && archivedExerciseIds?.includes(ex.id)) return;
+        if (hideLogged && exerciseStats[ex.id]?.count > 0) return;
         const gymMuscle = toGymMuscleName(ex.primaryMuscle);
         counts.All = (counts.All || 0) + 1;
         counts[gymMuscle] = (counts[gymMuscle] || 0) + 1;
       }
     });
     return counts;
-  }, [selectedCategory, showArchived, archivedExerciseIds]);
+  }, [selectedCategory, showArchived, archivedExerciseIds, hideLogged, exerciseStats]);
 
   // Filter exercises by category, muscle, and search query
   const filteredExercises = EXERCISES.filter(ex => {
@@ -128,7 +131,8 @@ export const ExerciseLibrary: React.FC = () => {
     const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gymMuscle.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesArchive = showArchived || !archivedExerciseIds?.includes(ex.id);
-    return matchesCategory && matchesMuscle && matchesSearch && matchesArchive;
+    const matchesLogged = !hideLogged || !(exerciseStats[ex.id]?.count > 0);
+    return matchesCategory && matchesMuscle && matchesSearch && matchesArchive && matchesLogged;
   });
 
   // Group filtered exercises by primaryMuscle (using gym-friendly names)
@@ -373,7 +377,17 @@ export const ExerciseLibrary: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex items-center justify-end flex-shrink-0">
+          <div className="flex items-center gap-3 justify-end flex-shrink-0">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-600 bg-[#e8ebf0] hover:bg-slate-200/50 px-3.5 py-1.5 rounded-xl border border-slate-350/20 transition-all shadow-sm">
+              <input
+                type="checkbox"
+                checked={hideLogged}
+                onChange={(e) => setHideLogged(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+              />
+              Hide Logged
+            </label>
+
             <button
               onClick={() => setShowArchived(prev => !prev)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 shadow-sm ${

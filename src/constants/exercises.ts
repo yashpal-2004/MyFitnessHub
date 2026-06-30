@@ -711,6 +711,31 @@ export const EXERCISES: ExerciseWithImage[] = [
     "image": "/exercises/hammer-curl.png"
   },
   {
+    "id": "reverse-cable-curl",
+    "name": "Reverse Cable Curl",
+    "category": "Biceps",
+    "primaryMuscle": "Brachioradialis",
+    "secondaryMuscles": [
+      "Biceps Brachii",
+      "Forearms"
+    ],
+    "equipment": "Cables",
+    "difficulty": "Beginner",
+    "instructions": [
+      "Attach a straight bar or EZ-bar to a low pulley cable station.",
+      "Grip the bar with an overhand (pronated) grip, hands shoulder-width apart.",
+      "Stand facing the machine, keep your elbows close to your torso.",
+      "Curl the bar upward by flexing your elbows while keeping your upper arms stationary.",
+      "Slowly lower the bar back to the starting position."
+    ],
+    "commonMistakes": [
+      "Flaring elbows outward",
+      "Allowing wrists to bend or sag during the movement",
+      "Using momentum to swing the weight"
+    ],
+    "image": "/exercises/reverse-cable-curl.png"
+  },
+  {
     "id": "dumbbell-lateral-raise",
     "name": "Dumbbell Lateral Raise",
     "category": "Shoulders",
@@ -1080,6 +1105,32 @@ export const EXERCISES: ExerciseWithImage[] = [
       "Bending the elbows too much"
     ],
     "image": "/exercises/reverse-pec-deck.png"
+  },
+  {
+    "id": "chest-supported-machine-row",
+    "name": "Chest-Supported Machine Row",
+    "category": "Back",
+    "primaryMuscle": "Latissimus Dorsi",
+    "secondaryMuscles": [
+      "Rhomboids",
+      "Trapezius",
+      "Biceps"
+    ],
+    "equipment": "Machine",
+    "difficulty": "Beginner",
+    "instructions": [
+      "Adjust the seat height so that your hands align with the lower chest/upper abdomen when gripping the handles.",
+      "Sit facing the machine pad with your chest firmly pressed against the support pad.",
+      "Grip the handles using your preferred grip (neutral or overhand).",
+      "Pull the handles toward your torso by driving your elbows back and squeezing your shoulder blades together.",
+      "Extend your arms slowly back to the starting position, maintaining tension on the back muscles."
+    ],
+    "commonMistakes": [
+      "Lifting the chest off the support pad to use momentum",
+      "Shrugging the shoulders upwards during the pull",
+      "Not extending the arms fully or rushing the negative phase"
+    ],
+    "image": "/exercises/chest-supported-machine-row.png"
   },
   {
     "id": "dumbbell-bent-over-row-single-arm",
