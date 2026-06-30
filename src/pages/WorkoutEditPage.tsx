@@ -504,7 +504,7 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
                       appendExercise({
                         exerciseId: ex.id,
                         exerciseName: ex.name,
-                        sets: [{ reps: 10, weight: 20, rpe: undefined }],
+                        sets: [{ reps: 10, weight: 20, rpe: 8 }],
                         notes: ''
                       });
                     });
@@ -689,7 +689,7 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
       <div className="flex gap-2 justify-between pt-2">
         <button
           type="button"
-          onClick={() => appendSet({ reps: 10, weight: 20, rpe: undefined })}
+          onClick={() => appendSet({ reps: 10, weight: 20, rpe: 8 })}
           className="skeuo-btn-light text-xs font-semibold px-4 py-2 flex items-center gap-1"
         >
           <Plus className="w-3.5 h-3.5" /> Add Set
