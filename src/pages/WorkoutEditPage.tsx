@@ -82,7 +82,7 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
         sets: ex.sets.map(s => ({
           reps: s.reps,
           weight: s.weight,
-          rpe: s.rpe ?? '',
+          rpe: s.rpe ?? undefined,
         })),
       })),
     },
@@ -504,7 +504,7 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
                       appendExercise({
                         exerciseId: ex.id,
                         exerciseName: ex.name,
-                        sets: [{ reps: 10, weight: 20, rpe: '' }],
+                        sets: [{ reps: 10, weight: 20, rpe: undefined }],
                         notes: ''
                       });
                     });
@@ -586,7 +586,7 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
     const mappedSets = lastExerciseLog.sets.map(s => ({
       reps: s.reps,
       weight: s.weight,
-      rpe: s.rpe ?? ''
+      rpe: s.rpe ?? undefined
     }));
     setValue(`exercises.${index}.sets`, mappedSets);
   };
@@ -667,9 +667,10 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
                   className="col-span-4 neu-input py-2 text-center text-sm font-semibold focus:ring-1 focus:ring-primary-500/20"
                 />
                 <input
-                  type="text"
-                  placeholder="—"
-                  {...register(`exercises.${index}.sets.${setIndex}.rpe`)}
+                  type="number"
+                  step="any"
+                  placeholder="RPE"
+                  {...register(`exercises.${index}.sets.${setIndex}.rpe`, { valueAsNumber: true })}
                   className="col-span-2 neu-input py-2 text-center text-sm font-semibold focus:ring-1 focus:ring-primary-500/20 placeholder:text-slate-350"
                 />
               </div>
@@ -688,7 +689,7 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
       <div className="flex gap-2 justify-between pt-2">
         <button
           type="button"
-          onClick={() => appendSet({ reps: 10, weight: 20, rpe: '' })}
+          onClick={() => appendSet({ reps: 10, weight: 20, rpe: undefined })}
           className="skeuo-btn-light text-xs font-semibold px-4 py-2 flex items-center gap-1"
         >
           <Plus className="w-3.5 h-3.5" /> Add Set
