@@ -13,7 +13,6 @@ import {
   Search, 
   Dumbbell, 
   Clock, 
-  Clipboard,
   Check
 } from 'lucide-react';
 
@@ -629,14 +628,14 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
 
   const overallSummary = React.useMemo(() => {
     if (!lastExerciseLog) return null;
-    const currentTotalVolume = watchedSets?.reduce((sum, s) => sum + (Number(s?.weight) || 0) * (Number(s?.reps) || 0), 0) || 0;
-    const previousTotalVolume = lastExerciseLog.sets.reduce((sum, s) => sum + (Number(s?.weight) || 0) * (Number(s?.reps) || 0), 0) || 0;
+    const currentTotalVolume = watchedSets?.reduce((sum: number, s: any) => sum + (Number(s?.weight) || 0) * (Number(s?.reps) || 0), 0) || 0;
+    const previousTotalVolume = lastExerciseLog.sets.reduce((sum: number, s: any) => sum + (Number(s?.weight) || 0) * (Number(s?.reps) || 0), 0) || 0;
 
-    const currentMaxWeight = watchedSets?.reduce((max, s) => Math.max(max, Number(s?.weight) || 0), 0) || 0;
-    const previousMaxWeight = lastExerciseLog.sets.reduce((max, s) => Math.max(max, Number(s?.weight) || 0), 0) || 0;
+    const currentMaxWeight = watchedSets?.reduce((max: number, s: any) => Math.max(max, Number(s?.weight) || 0), 0) || 0;
+    const previousMaxWeight = lastExerciseLog.sets.reduce((max: number, s: any) => Math.max(max, Number(s?.weight) || 0), 0) || 0;
 
-    const currentTotalReps = watchedSets?.reduce((sum, s) => sum + (Number(s?.reps) || 0), 0) || 0;
-    const previousTotalReps = lastExerciseLog.sets.reduce((sum, s) => sum + (Number(s?.reps) || 0), 0) || 0;
+    const currentTotalReps = watchedSets?.reduce((sum: number, s: any) => sum + (Number(s?.reps) || 0), 0) || 0;
+    const previousTotalReps = lastExerciseLog.sets.reduce((sum: number, s: any) => sum + (Number(s?.reps) || 0), 0) || 0;
 
     if (currentTotalVolume === 0) return null;
 
