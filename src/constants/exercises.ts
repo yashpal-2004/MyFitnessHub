@@ -2497,5 +2497,32 @@ export const EXERCISES: ExerciseWithImage[] = [
       "Using too much weight causing neck strain"
     ],
     "image": "/exercises/machine-shrug.png"
+  },
+  {
+    "id": "cable-face-pull-rope",
+    "name": "Cable Face Pull (Rope Attachment)",
+    "category": "Shoulders",
+    "primaryMuscle": "Posterior Deltoids",
+    "secondaryMuscles": [
+      "Trapezius",
+      "Rhomboids",
+      "Lateral Deltoids"
+    ],
+    "equipment": "Cables",
+    "difficulty": "Beginner",
+    "instructions": [
+      "Set the cable pulley to upper-chest height and attach a rope.",
+      "Grip the rope with your thumbs pointing back, step back to lift the weight stack, and stand with a stable, athletic stance.",
+      "Pull the center of the rope directly towards your nose/face, flare your elbows out, and pull the ends of the rope apart next to your ears.",
+      "Hold the contraction briefly, focusing on squeezing your rear delts and upper back, then slowly return to the starting position."
+    ],
+    "commonMistakes": [
+      "Using too much weight and using momentum",
+      "Pulling with hands instead of elbows",
+      "Not separating the rope ends at the end of the motion",
+      "Dropping the elbows below the shoulders"
+    ],
+    "image": "/exercises/cable-face-pull-rope.png"
   }
 ];
+

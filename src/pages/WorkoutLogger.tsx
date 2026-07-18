@@ -303,19 +303,6 @@ export const WorkoutLogger: React.FC = () => {
                 })}
               </div>
             </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
-                <Clipboard className="w-3.5 h-3.5 text-slate-400" />
-                Workout Notes (Optional)
-              </label>
-              <textarea
-                placeholder="How did this workout feel? Any notes on energy level?"
-                {...register('notes')}
-                rows={2}
-                className="w-full neu-input focus:ring-1 focus:ring-primary-500/20 resize-none"
-              />
-            </div>
           </div>
 
           {/* Exercises List */}
@@ -364,8 +351,8 @@ export const WorkoutLogger: React.FC = () => {
 
         {/* Exercise Selector Modal */}
         {showSearchModal && (
-          <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="glass-card w-full max-w-lg shadow-2xl relative max-h-[85vh] flex flex-col border border-white/60">
+          <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="glass-card w-full max-w-lg shadow-2xl relative max-h-[75vh] md:max-h-[85vh] flex flex-col border border-white/60">
               <div className="p-6 border-b border-slate-200/50 flex items-center justify-between">
                 <h3 className="font-extrabold text-slate-800 text-lg">Select Exercise</h3>
                 <button
@@ -541,10 +528,23 @@ export const WorkoutLogger: React.FC = () => {
                   type="button"
                   onClick={() => {
                     tempSelectedExercises.forEach(ex => {
+                      // Find the most recent workout that has this exercise
+                      const sortedWorkouts = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
+                      const lastWorkout = sortedWorkouts.find(w => w.exercises.some(e => e.exerciseId === ex.id));
+                      const lastLog = lastWorkout?.exercises.find(e => e.exerciseId === ex.id);
+
+                      const defaultSets = lastLog?.sets && lastLog.sets.length > 0
+                        ? lastLog.sets.map(s => ({
+                            reps: s.reps,
+                            weight: s.weight,
+                            rpe: (typeof s.rpe === 'number' && !isNaN(s.rpe)) ? s.rpe : 8
+                          }))
+                        : [{ reps: 10, weight: 20, rpe: 8 }];
+
                       appendExercise({
                         exerciseId: ex.id,
                         exerciseName: ex.name,
-                        sets: [{ reps: 10, weight: 20, rpe: 8 }],
+                        sets: defaultSets,
                         notes: ''
                       });
                     });
@@ -575,7 +575,7 @@ interface ExerciseRowProps {
   setValue: any;
 }
 
-const getImprovement = (current: { weight?: number; reps?: number } | undefined, previous: { weight: number; reps: number } | undefined) => {
+const getComparison = (current: { weight?: number; reps?: number } | undefined, previous: { weight: number; reps: number } | undefined) => {
   if (!current || !previous) return null;
   const curW = Number(current.weight) || 0;
   const curR = Number(current.reps) || 0;
@@ -586,12 +586,20 @@ const getImprovement = (current: { weight?: number; reps?: number } | undefined,
 
   if (curW > prevW) {
     const diff = (curW - prevW).toFixed(1).replace(/\.0$/, '');
-    return { text: `+${diff} kg` };
+    return { text: `+${diff} kg`, type: 'improvement' as const };
+  } else if (curW < prevW) {
+    const diff = (prevW - curW).toFixed(1).replace(/\.0$/, '');
+    return { text: `-${diff} kg`, type: 'decrease' as const };
   } else if (curW === prevW && curR > prevR) {
     const diff = curR - prevR;
-    return { text: `+${diff} rep${diff > 1 ? 's' : ''}` };
+    return { text: `+${diff} rep${diff > 1 ? 's' : ''}`, type: 'improvement' as const };
+  } else if (curW === prevW && curR < prevR) {
+    const diff = prevR - curR;
+    return { text: `-${diff} rep${diff > 1 ? 's' : ''}`, type: 'decrease' as const };
   } else if (curW * curR > prevW * prevR) {
-    return { text: '🔥 Better Vol' };
+    return { text: '🔥 Better Vol', type: 'improvement' as const };
+  } else if (curW * curR < prevW * prevR) {
+    return { text: '📉 Lower Vol', type: 'decrease' as const };
   }
   return null;
 };
@@ -619,12 +627,71 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
     return lastWorkoutWithExercise.exercises.find(ex => ex.exerciseId === exerciseId);
   }, [lastWorkoutWithExercise, exerciseId]);
 
+  const overallSummary = React.useMemo(() => {
+    if (!lastExerciseLog) return null;
+    const currentTotalVolume = watchedSets?.reduce((sum, s) => sum + (Number(s?.weight) || 0) * (Number(s?.reps) || 0), 0) || 0;
+    const previousTotalVolume = lastExerciseLog.sets.reduce((sum, s) => sum + (Number(s?.weight) || 0) * (Number(s?.reps) || 0), 0) || 0;
+
+    const currentMaxWeight = watchedSets?.reduce((max, s) => Math.max(max, Number(s?.weight) || 0), 0) || 0;
+    const previousMaxWeight = lastExerciseLog.sets.reduce((max, s) => Math.max(max, Number(s?.weight) || 0), 0) || 0;
+
+    const currentTotalReps = watchedSets?.reduce((sum, s) => sum + (Number(s?.reps) || 0), 0) || 0;
+    const previousTotalReps = lastExerciseLog.sets.reduce((sum, s) => sum + (Number(s?.reps) || 0), 0) || 0;
+
+    if (currentTotalVolume === 0) return null;
+
+    const volDiff = currentTotalVolume - previousTotalVolume;
+    const maxWDiff = currentMaxWeight - previousMaxWeight;
+    const repsDiff = currentTotalReps - previousTotalReps;
+
+    const formatDiff = (diff: number, unit: string) => {
+      if (diff === 0) return { text: `0 ${unit}`, type: 'neutral' as const };
+      const sign = diff > 0 ? '+' : '';
+      const textVal = diff.toFixed(1).replace(/\.0$/, '');
+      return {
+        text: `${sign}${textVal} ${unit}`,
+        type: diff > 0 ? ('improvement' as const) : ('decrease' as const)
+      };
+    };
+
+    const formatRepDiff = (diff: number) => {
+      if (diff === 0) return { text: `0 reps`, type: 'neutral' as const };
+      const sign = diff > 0 ? '+' : '';
+      return {
+        text: `${sign}${diff} rep${Math.abs(diff) !== 1 ? 's' : ''}`,
+        type: diff > 0 ? ('improvement' as const) : ('decrease' as const)
+      };
+    };
+
+    return {
+      volume: {
+        current: currentTotalVolume,
+        previous: previousTotalVolume,
+        diff: formatDiff(volDiff, 'kg')
+      },
+      maxWeight: {
+        current: currentMaxWeight,
+        previous: previousMaxWeight,
+        diff: formatDiff(maxWDiff, 'kg')
+      },
+      reps: {
+        current: currentTotalReps,
+        previous: previousTotalReps,
+        diff: formatRepDiff(repsDiff)
+      }
+    };
+  }, [watchedSets, lastExerciseLog]);
+
+  const exerciseDetails = React.useMemo(() => {
+    return EXERCISES.find(ex => ex.id === exerciseId);
+  }, [exerciseId]);
+
   const handleCopyLastSets = () => {
     if (!lastExerciseLog) return;
     const mappedSets = lastExerciseLog.sets.map(s => ({
       reps: s.reps,
       weight: s.weight,
-      rpe: s.rpe ?? ''
+      rpe: (typeof s.rpe === 'number' && !isNaN(s.rpe)) ? s.rpe : 8
     }));
     setValue(`exercises.${index}.sets`, mappedSets);
   };
@@ -633,7 +700,7 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
     <div className="neu-card p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="p-2.5 shadow-neu-inset bg-[#e8ebf0] text-primary-500 rounded-lg">
+          <div className="p-2.5 shadow-neu-inset bg-[#e8ebf0] text-primary-500 rounded-lg flex-shrink-0">
             <Dumbbell className="w-4 h-4" />
           </div>
           <h3 className="font-bold text-slate-800 text-base">{exerciseName}</h3>
@@ -647,30 +714,105 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
         </button>
       </div>
 
-      {lastExerciseLog && (
-        <div className="p-4 rounded-xl bg-slate-100/60 border border-slate-200/50 space-y-2.5">
-          <div className="flex items-center justify-between text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3 text-slate-400" />
-              Previous sets ({lastWorkoutWithExercise?.date ? new Date(lastWorkoutWithExercise.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''})
-            </span>
-            <button
-              type="button"
-              onClick={handleCopyLastSets}
-              className="text-primary-650 hover:text-primary-750 font-bold text-[10px] hover:underline"
-            >
-              Copy Last Sets
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {lastExerciseLog.sets.map((set, sIdx) => (
-              <div key={sIdx} className="bg-white/80 px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-sm font-semibold text-xs text-slate-700">
-                <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Set {sIdx + 1}:</span>
-                {set.weight} kg × {set.reps}
-                {set.rpe ? ` (RPE ${set.rpe})` : ''}
+      {(exerciseDetails?.image || lastExerciseLog) && (
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+          {/* Image column */}
+          {exerciseDetails?.image && (
+            <div className={`${lastExerciseLog ? 'md:col-span-4' : 'md:col-span-12'} bg-slate-100/30 rounded-2xl border border-slate-200/30 flex items-center justify-center p-4`}>
+              <div className="w-full aspect-square max-w-[150px] bg-white rounded-2xl flex items-center justify-center p-3 border border-slate-200/60 overflow-hidden shadow-neu-inset">
+                <img
+                  src={exerciseDetails.image}
+                  alt={exerciseName}
+                  className="w-full h-full object-contain"
+                />
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* Stats column (Previous sets & Overall Change) */}
+          {lastExerciseLog && (
+            <div className={`${exerciseDetails?.image ? 'md:col-span-8' : 'md:col-span-12'} p-4 rounded-xl bg-slate-100/60 border border-slate-200/50 flex flex-col justify-between gap-3`}>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    Previous sets ({lastWorkoutWithExercise?.date ? new Date(lastWorkoutWithExercise.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyLastSets}
+                    className="text-primary-650 hover:text-primary-750 font-bold text-[10px] hover:underline"
+                  >
+                    Copy Last Sets
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {lastExerciseLog.sets.map((set, sIdx) => (
+                    <div key={sIdx} className="bg-white/80 px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-sm font-semibold text-xs text-slate-700">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Set {sIdx + 1}:</span>
+                      {set.weight} kg × {set.reps}
+                      {set.rpe ? ` (RPE ${set.rpe})` : ''}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {overallSummary && (
+                <div className="pt-2.5 border-t border-slate-250/50 space-y-1.5">
+                  <div className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                    Overall Change:
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-white/50 p-2 rounded-lg border border-slate-200/60 flex flex-col items-center">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">Volume</span>
+                      <span className="text-xs font-bold text-slate-800">
+                        {overallSummary.volume.current.toLocaleString()} kg
+                      </span>
+                      <span className={`text-[9px] font-extrabold mt-0.5 ${
+                        overallSummary.volume.diff.type === 'improvement'
+                          ? 'text-emerald-600'
+                          : overallSummary.volume.diff.type === 'decrease'
+                          ? 'text-rose-600'
+                          : 'text-slate-450'
+                      }`}>
+                        {overallSummary.volume.diff.text}
+                      </span>
+                    </div>
+                    <div className="bg-white/50 p-2 rounded-lg border border-slate-200/60 flex flex-col items-center">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">Max Weight</span>
+                      <span className="text-xs font-bold text-slate-800">
+                        {overallSummary.maxWeight.current} kg
+                      </span>
+                      <span className={`text-[9px] font-extrabold mt-0.5 ${
+                        overallSummary.maxWeight.diff.type === 'improvement'
+                          ? 'text-emerald-600'
+                          : overallSummary.maxWeight.diff.type === 'decrease'
+                          ? 'text-rose-600'
+                          : 'text-slate-450'
+                      }`}>
+                        {overallSummary.maxWeight.diff.text}
+                      </span>
+                    </div>
+                    <div className="bg-white/50 p-2 rounded-lg border border-slate-200/60 flex flex-col items-center">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">Total Reps</span>
+                      <span className="text-xs font-bold text-slate-800">
+                        {overallSummary.reps.current}
+                      </span>
+                      <span className={`text-[9px] font-extrabold mt-0.5 ${
+                        overallSummary.reps.diff.type === 'improvement'
+                          ? 'text-emerald-600'
+                          : overallSummary.reps.diff.type === 'decrease'
+                          ? 'text-rose-600'
+                          : 'text-slate-450'
+                      }`}>
+                        {overallSummary.reps.diff.text}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -685,7 +827,7 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
         {setFields.map((setField, setIndex) => {
           const currentSet = watchedSets?.[setIndex];
           const previousSet = lastExerciseLog?.sets?.[setIndex];
-          const improvement = getImprovement(currentSet, previousSet);
+          const comparison = getComparison(currentSet, previousSet);
 
           return (
             <div key={setField.id} className="space-y-1">
@@ -711,10 +853,14 @@ const ExerciseRow: React.FC<ExerciseRowProps> = ({ control, index, exerciseId, e
                   className="col-span-2 neu-input py-2 text-center text-sm font-semibold focus:ring-1 focus:ring-primary-500/20 placeholder:text-slate-350"
                 />
               </div>
-              {improvement && (
+              {comparison && (
                 <div className="flex justify-end px-2">
-                  <span className="text-[9px] text-emerald-650 font-bold bg-emerald-50 border border-emerald-250/30 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 shadow-sm animate-pulse">
-                    {improvement.text}
+                  <span className={`text-[9px] font-bold border rounded-md px-1.5 py-0.5 flex items-center gap-0.5 shadow-sm ${
+                    comparison.type === 'improvement'
+                      ? 'text-emerald-650 bg-emerald-50 border-emerald-250/30 animate-pulse'
+                      : 'text-rose-650 bg-rose-50 border-rose-250/30'
+                  }`}>
+                    {comparison.text}
                   </span>
                 </div>
               )}
