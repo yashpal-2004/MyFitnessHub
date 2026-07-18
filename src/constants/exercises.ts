@@ -2523,6 +2523,32 @@ export const EXERCISES: ExerciseWithImage[] = [
       "Dropping the elbows below the shoulders"
     ],
     "image": "/exercises/cable-face-pull-rope.png"
+  },
+  {
+    "id": "smith-machine-squat",
+    "name": "Smith Machine Squat",
+    "category": "Legs",
+    "primaryMuscle": "Quadriceps",
+    "secondaryMuscles": [
+      "Glutes",
+      "Hamstrings",
+      "Calves"
+    ],
+    "equipment": "Machine",
+    "difficulty": "Intermediate",
+    "instructions": [
+      "Adjust the bar of the Smith machine to about shoulder-height and load the desired weight.",
+      "Step under the bar, positioning it across your upper back/traps. Grip the bar with both hands, unlatch it, and step slightly forward so your feet are shoulder-width apart.",
+      "Lower your body by bending at the hips and knees, keeping your chest up and back straight, until your thighs are parallel to the floor.",
+      "Push through your heels to return to the starting position, extending your hips and knees fully."
+    ],
+    "commonMistakes": [
+      "Placing feet too far back, causing knee strain",
+      "Rounding the lower back during the descent",
+      "Letting the knees collapse inward"
+    ],
+    "image": "/exercises/smith-machine-squat.png"
   }
 ];
+
 
