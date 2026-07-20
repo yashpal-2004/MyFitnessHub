@@ -11,10 +11,24 @@ import {
   Sparkles, 
   Plus, 
   ChevronRight,
-  X
+  X,
+  Wifi
 } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 import { AnimatedPage } from '../components/AnimatedPage';
+import { EXERCISES } from '../constants/exercises';
+
+const routeLabels: Record<string, string> = {
+  '/': 'Dashboard',
+  '/exercises': 'Exercises',
+  '/anatomy': 'Anatomy',
+  '/history': 'History',
+  '/calendar': 'Calendar',
+  '/weight': 'Weight',
+  '/analytics': 'Analytics',
+  '/log': 'Log Workout',
+  '/records': 'PR Records'
+};
 
 export const Dashboard: React.FC = () => {
   const { 
@@ -26,6 +40,92 @@ export const Dashboard: React.FC = () => {
   } = useFitnessStore();
 
   const [showAllPrs, setShowAllPrs] = useState(false);
+  const [offlineStatus, setOfflineStatus] = useState<{
+    isAvailable: boolean;
+    percentage: number;
+    cachedPages: string[];
+    missingPages: string[];
+    totalImages: number;
+    cachedImages: number;
+  }>({
+    isAvailable: false,
+    percentage: 0,
+    cachedPages: [],
+    missingPages: ['/', '/exercises', '/anatomy', '/history', '/calendar', '/weight', '/analytics', '/log', '/records'],
+    totalImages: 0,
+    cachedImages: 0
+  });
+
+  useEffect(() => {
+    const checkOfflineStatus = async () => {
+      try {
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          const pwaCacheName = cacheNames.find(name => name.includes('myfitnesshub'));
+          
+          const coreRoutes = [
+            '/',
+            '/exercises',
+            '/anatomy',
+            '/history',
+            '/calendar',
+            '/weight',
+            '/analytics',
+            '/log',
+            '/records'
+          ];
+
+          if (pwaCacheName) {
+            const cache = await caches.open(pwaCacheName);
+            const cachedRequests = await cache.keys();
+            const cachedUrls = cachedRequests.map(req => new URL(req.url).pathname);
+
+            const isShellCached = cachedUrls.includes('/') || 
+                                  cachedUrls.includes('/index.html') || 
+                                  cachedUrls.some(url => url.endsWith('.js') || url.endsWith('.css'));
+
+            const exerciseImages = EXERCISES.map(ex => ex.image).filter(Boolean);
+            const totalImagesCount = exerciseImages.length;
+            const cachedImagesCount = exerciseImages.filter(img => 
+              cachedUrls.some(url => url.endsWith(img))
+            ).length;
+
+            let percent = 0;
+            if (isShellCached) {
+              percent += 70;
+            }
+            if (totalImagesCount > 0) {
+              percent += Math.round((cachedImagesCount / totalImagesCount) * 30);
+            } else {
+              percent += 30;
+            }
+
+            setOfflineStatus({
+              isAvailable: isShellCached,
+              percentage: percent,
+              cachedPages: isShellCached ? coreRoutes : [],
+              missingPages: isShellCached ? [] : coreRoutes,
+              totalImages: totalImagesCount,
+              cachedImages: cachedImagesCount
+            });
+          } else {
+            setOfflineStatus({
+              isAvailable: false,
+              percentage: 0,
+              cachedPages: [],
+              missingPages: coreRoutes,
+              totalImages: 0,
+              cachedImages: 0
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error checking offline status:', err);
+      }
+    };
+
+    checkOfflineStatus();
+  }, []);
 
   useEffect(() => {
     initialize();
@@ -338,6 +438,84 @@ export const Dashboard: React.FC = () => {
 
           {/* Right Sidebar Panels */}
           <div className="space-y-8">
+            {/* Offline Availability Card */}
+            <div className="glass-card p-6 shadow-neu-outset border border-white/60">
+              <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <Wifi className="w-5 h-5 text-primary-500" />
+                Offline Availability
+              </h2>
+
+              <div className="space-y-4">
+                <div className="neu-card-inset p-4 flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold block">App Caching Status</span>
+                    <div className="flex items-baseline gap-1.5 mt-1">
+                      <span className="text-3xl font-extrabold text-slate-800">{offlineStatus.percentage}%</span>
+                      <span className="text-slate-400 text-xs font-semibold">Offline Ready</span>
+                    </div>
+                  </div>
+                  {/* Progress ring/circle */}
+                  <div className="relative w-14 h-14 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle
+                        cx="28"
+                        cy="28"
+                        r="24"
+                        stroke="#e2e8f0"
+                        strokeWidth="4"
+                        fill="transparent"
+                      />
+                      <circle
+                        cx="28"
+                        cy="28"
+                        r="24"
+                        stroke="#f97316"
+                        strokeWidth="4"
+                        fill="transparent"
+                        strokeDasharray={2 * Math.PI * 24}
+                        strokeDashoffset={2 * Math.PI * 24 * (1 - offlineStatus.percentage / 100)}
+                        className="transition-all duration-500 ease-out"
+                      />
+                    </svg>
+                    <span className="absolute text-[10px] font-extrabold text-slate-700">
+                      {offlineStatus.percentage}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold block px-1">Pages Offline Status</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {offlineStatus.cachedPages.map(page => (
+                      <div key={page} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-[10px] font-bold text-emerald-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        {routeLabels[page] || page}
+                      </div>
+                    ))}
+                    {offlineStatus.missingPages.map(page => (
+                      <div key={page} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-100 text-[10px] font-bold text-rose-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        {routeLabels[page] || page}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {offlineStatus.totalImages > offlineStatus.cachedImages && (
+                  <div className="pt-2 border-t border-slate-200/50 flex flex-col gap-1 text-[10px] text-slate-500 font-semibold">
+                    <div className="flex justify-between items-center text-slate-450">
+                      <span>Exercise Illustrations Cache:</span>
+                      <span className="font-bold text-slate-700">{offlineStatus.cachedImages} / {offlineStatus.totalImages}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-amber-600 font-bold bg-amber-50/50 border border-amber-100/50 rounded-lg px-2 py-1.5 mt-0.5">
+                      <span>Pending offline sync:</span>
+                      <span>{offlineStatus.totalImages - offlineStatus.cachedImages} illustrations left</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Quick Metrics & Badges */}
             <div className="glass-card p-6 shadow-neu-outset border border-white/60">
               <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">

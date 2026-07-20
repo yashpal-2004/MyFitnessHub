@@ -1,7 +1,8 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import { AnimatePresence } from 'framer-motion';
+import { EXERCISES } from './constants/exercises';
 
 // Lazy loading pages for improved performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -22,6 +23,34 @@ const LoadingFallback = () => (
 );
 
 function App() {
+  useEffect(() => {
+    // Preload lazy pages after initial load to make entire app available offline instantly
+    const preloadPages = [
+      () => import('./pages/Dashboard'),
+      () => import('./pages/ExerciseLibrary'),
+      () => import('./pages/WorkoutLogger'),
+      () => import('./pages/WeightTracker'),
+      () => import('./pages/CalendarView'),
+      () => import('./pages/Analytics'),
+      () => import('./pages/RecordsPage'),
+      () => import('./pages/WorkoutHistory'),
+      () => import('./pages/MuscleGroupsPage')
+    ];
+
+    setTimeout(() => {
+      preloadPages.forEach(p => p().catch(() => {}));
+    }, 2000);
+
+    // Preload all exercise illustrations to sync into service worker cache
+    setTimeout(() => {
+      const exerciseImages = EXERCISES.map(ex => ex.image).filter(Boolean);
+      exerciseImages.forEach(src => {
+        const img = new Image();
+        img.src = src;
+      });
+    }, 4500);
+  }, []);
+
   return (
     <BrowserRouter>
       <Layout>
