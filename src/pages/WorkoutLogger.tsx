@@ -74,6 +74,34 @@ export const WorkoutLogger: React.FC = () => {
 
   const watchedCategories = watch('categories');
   const watchedDate = watch('date');
+  const watchedExercises = watch('exercises') || [];
+
+  const liveStats = React.useMemo(() => {
+    let totalSets = 0;
+    let totalReps = 0;
+    let totalVolume = 0;
+
+    watchedExercises.forEach(ex => {
+      if (ex && ex.sets) {
+        ex.sets.forEach(s => {
+          if (s) {
+            const reps = Number(s.reps) || 0;
+            const weight = Number(s.weight) || 0;
+            totalSets += 1;
+            totalReps += reps;
+            totalVolume += reps * weight;
+          }
+        });
+      }
+    });
+
+    return {
+      totalExercises: watchedExercises.length,
+      totalSets,
+      totalReps,
+      totalVolume
+    };
+  }, [watchedExercises]);
 
   React.useEffect(() => {
     const catsStr = watchedCategories && watchedCategories.length > 0
@@ -302,6 +330,31 @@ export const WorkoutLogger: React.FC = () => {
                 })}
               </div>
             </div>
+
+            {/* Live Workout Stats Summary */}
+            {liveStats.totalExercises > 0 && (
+              <div className="pt-4 border-t border-slate-200/60 mt-2">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Live Workout Summary</span>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-[#f0f2f5] p-3 rounded-xl border border-slate-200/50 flex flex-col items-center">
+                    <span className="text-[10px] font-bold text-slate-450 uppercase">Exercises</span>
+                    <span className="text-lg font-extrabold text-slate-800 mt-0.5">{liveStats.totalExercises}</span>
+                  </div>
+                  <div className="bg-[#f0f2f5] p-3 rounded-xl border border-slate-200/50 flex flex-col items-center">
+                    <span className="text-[10px] font-bold text-slate-450 uppercase">Total Sets</span>
+                    <span className="text-lg font-extrabold text-slate-800 mt-0.5">{liveStats.totalSets}</span>
+                  </div>
+                  <div className="bg-[#f0f2f5] p-3 rounded-xl border border-slate-200/50 flex flex-col items-center">
+                    <span className="text-[10px] font-bold text-slate-450 uppercase">Total Reps</span>
+                    <span className="text-lg font-extrabold text-slate-800 mt-0.5">{liveStats.totalReps}</span>
+                  </div>
+                  <div className="bg-[#f0f2f5] p-3 rounded-xl border border-slate-200/50 flex flex-col items-center">
+                    <span className="text-[10px] font-bold text-slate-450 uppercase">Total Volume</span>
+                    <span className="text-lg font-extrabold text-slate-800 mt-0.5">{liveStats.totalVolume.toLocaleString()} kg</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Exercises List */}
