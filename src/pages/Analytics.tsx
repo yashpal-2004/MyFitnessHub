@@ -20,7 +20,15 @@ import {
   LineChart as ChartIcon, 
   Calendar, 
   Target, 
-  Flame 
+  Flame,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
+  ArrowDownRight,
+  Layers,
+  Dumbbell,
+  Trophy,
+  Activity
 } from 'lucide-react';
 
 export const Analytics: React.FC = () => {
@@ -99,6 +107,78 @@ export const Analytics: React.FC = () => {
     }));
   };
 
+  // Month-over-Month calculation
+  const momStats = React.useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const prevDate = new Date(currentYear, currentMonth - 1, 1);
+    const prevYear = prevDate.getFullYear();
+    const prevMonth = prevDate.getMonth();
+
+    const thisMonthName = now.toLocaleString('default', { month: 'short' });
+    const lastMonthName = prevDate.toLocaleString('default', { month: 'short' });
+
+    let thisMonthVol = 0;
+    let thisMonthWkCount = 0;
+    let thisMonthSetCount = 0;
+
+    let lastMonthVol = 0;
+    let lastMonthWkCount = 0;
+    let lastMonthSetCount = 0;
+
+    workouts.forEach((w) => {
+      const d = new Date(w.date);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+
+      const workoutVol = w.exercises.reduce(
+        (acc, ex) => acc + ex.sets.reduce((s, set) => s + set.weight * set.reps, 0),
+        0
+      );
+      const workoutSets = w.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
+
+      if (y === currentYear && m === currentMonth) {
+        thisMonthWkCount += 1;
+        thisMonthVol += workoutVol;
+        thisMonthSetCount += workoutSets;
+      } else if (y === prevYear && m === prevMonth) {
+        lastMonthWkCount += 1;
+        lastMonthVol += workoutVol;
+        lastMonthSetCount += workoutSets;
+      }
+    });
+
+    let thisMonthPrs = 0;
+    let lastMonthPrs = 0;
+
+    personalRecords.forEach((pr) => {
+      if (pr.date) {
+        const d = new Date(pr.date);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        if (y === currentYear && m === currentMonth) thisMonthPrs += 1;
+        else if (y === prevYear && m === prevMonth) lastMonthPrs += 1;
+      }
+    });
+
+    const getDiff = (curr: number, prev: number) => {
+      if (prev === 0) return curr > 0 ? { pct: 100, isUp: true } : { pct: 0, isUp: true };
+      const diff = Math.round(((curr - prev) / prev) * 100);
+      return { pct: Math.abs(diff), isUp: diff >= 0 };
+    };
+
+    return {
+      thisMonthName,
+      lastMonthName,
+      vol: { thisM: thisMonthVol, lastM: lastMonthVol, diff: getDiff(thisMonthVol, lastMonthVol) },
+      workouts: { thisM: thisMonthWkCount, lastM: lastMonthWkCount, diff: getDiff(thisMonthWkCount, lastMonthWkCount) },
+      sets: { thisM: thisMonthSetCount, lastM: lastMonthSetCount, diff: getDiff(thisMonthSetCount, lastMonthSetCount) },
+      prs: { thisM: thisMonthPrs, lastM: lastMonthPrs, diff: getDiff(thisMonthPrs, lastMonthPrs) },
+    };
+  }, [workouts, personalRecords]);
+
   const volumeData = getVolumeByMuscleGroup();
   const freqData = getWorkoutsFrequency();
   const distData = getCategoryDistribution();
@@ -154,6 +234,88 @@ export const Analytics: React.FC = () => {
               <span className="text-xs font-semibold text-slate-400 block uppercase tracking-wider">Workouts Logged</span>
               <span className="text-xl font-extrabold text-slate-800">{workouts.length} total sessions</span>
             </div>
+          </div>
+        </div>
+
+        {/* Month-over-Month Comparison Card */}
+        <div className="glass-card p-6 shadow-neu-outset border border-white/60 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/40 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 shadow-neu-inset bg-[#e8ebf0] text-primary-500 rounded-xl">
+                <Activity className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-lg">Month-over-Month Workout Comparison</h3>
+                <p className="text-slate-400 text-xs font-medium">Comparing performance: {momStats.thisMonthName} vs. {momStats.lastMonthName}</p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 bg-primary-50 text-primary-600 border border-primary-100 rounded-full">
+              <Calendar className="w-3.5 h-3.5" />
+              {momStats.thisMonthName} (Current) vs {momStats.lastMonthName} (Previous)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+            {[
+              {
+                label: 'Total Volume Lifted',
+                thisVal: `${momStats.vol.thisM.toLocaleString()} kg`,
+                lastVal: `${momStats.vol.lastM.toLocaleString()} kg`,
+                diff: momStats.vol.diff,
+                icon: Dumbbell,
+                color: 'text-primary-500',
+              },
+              {
+                label: 'Workout Sessions',
+                thisVal: `${momStats.workouts.thisM} sessions`,
+                lastVal: `${momStats.workouts.lastM} sessions`,
+                diff: momStats.workouts.diff,
+                icon: Calendar,
+                color: 'text-violet-500',
+              },
+              {
+                label: 'Total Sets Logged',
+                thisVal: `${momStats.sets.thisM} sets`,
+                lastVal: `${momStats.sets.lastM} sets`,
+                diff: momStats.sets.diff,
+                icon: Layers,
+                color: 'text-emerald-500',
+              },
+              {
+                label: 'New PRs Broken',
+                thisVal: `${momStats.prs.thisM} PRs`,
+                lastVal: `${momStats.prs.lastM} PRs`,
+                diff: momStats.prs.diff,
+                icon: Trophy,
+                color: 'text-amber-500',
+              },
+            ].map(({ label, thisVal, lastVal, diff, icon: Icon, color }) => (
+              <div key={label} className="p-4 bg-white/70 rounded-2xl border border-slate-200/60 shadow-sm space-y-2 neu-card-inset">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`w-4 h-4 ${color}`} />
+                    <span className="text-xs font-bold text-slate-500">{label}</span>
+                  </div>
+                  <span
+                    className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      diff.isUp
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-rose-50 text-rose-700 border border-rose-200'
+                    }`}
+                  >
+                    {diff.isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                    {diff.isUp ? `+${diff.pct}%` : `-${diff.pct}%`}
+                  </span>
+                </div>
+
+                <div className="pt-1">
+                  <p className="text-xl font-black text-slate-900 leading-tight">{thisVal}</p>
+                  <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                    Prev ({momStats.lastMonthName}): {lastVal}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

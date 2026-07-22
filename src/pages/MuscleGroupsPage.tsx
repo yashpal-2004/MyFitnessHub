@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EXERCISES } from '../constants/exercises';
+import { useFitnessStore } from '../store/useFitnessStore';
 import { AnimatedPage } from '../components/AnimatedPage';
-import { Activity, ChevronRight, ArrowLeft, Info } from 'lucide-react';
+import { Activity, ChevronRight, ArrowLeft, Info, Flame, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toGymMuscleName } from '../utils/muscleMapper';
 
 const getCategoryFrontImageUrl = (category: string) => {
@@ -122,12 +123,87 @@ const getCategorySideImageUrl = (category: string) => {
 
 export const MuscleGroupsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { workouts, initialize } = useFitnessStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
   const categories = ['Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps'] as const;
   const [hoveredMuscle, setHoveredMuscle] = useState<{ category: string; muscle: string } | null>(null);
   const [selectedCategoryDetail, setSelectedCategoryDetail] = useState<typeof categories[number] | null>(null);
+  const [timeframe, setTimeframe] = useState<'weekly' | 'monthly'>('weekly');
+
+  const isMonthly = timeframe === 'monthly';
+
+  // Sets calculation per muscle category based on selected timeframe (7 days vs 30 days)
+  const muscleVolume = useMemo(() => {
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - (isMonthly ? 30 : 7));
+    const dateThreshold = daysAgo.toISOString().split('T')[0];
+
+    const categorySets: Record<string, number> = {
+      Chest: 0,
+      Back: 0,
+      Legs: 0,
+      Shoulders: 0,
+      Biceps: 0,
+      Triceps: 0,
+    };
+
+    workouts.forEach((w) => {
+      if (w.date >= dateThreshold) {
+        w.exercises.forEach((ex) => {
+          const fullEx = EXERCISES.find((e) => e.id === ex.exerciseId);
+          if (fullEx && categorySets[fullEx.category] !== undefined) {
+            categorySets[fullEx.category] += ex.sets.length;
+          }
+        });
+      }
+    });
+
+    return categorySets;
+  }, [workouts, isMonthly]);
+
+  const getHypertrophyZone = (sets: number) => {
+    const minOpt = isMonthly ? 40 : 10;
+    const maxOpt = isMonthly ? 80 : 20;
+
+    if (sets < minOpt) {
+      return {
+        zone: 'Maintenance Zone',
+        badgeBg: 'bg-slate-100 text-slate-700 border-slate-200',
+        progressBarBg: 'bg-slate-400',
+        textColor: 'text-slate-600',
+        icon: Info,
+        label: `<${minOpt} sets`,
+        maxOpt,
+      };
+    } else if (sets <= maxOpt) {
+      return {
+        zone: 'Optimal Hypertrophy',
+        badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold',
+        progressBarBg: 'bg-emerald-500',
+        textColor: 'text-emerald-600',
+        icon: CheckCircle2,
+        label: `${minOpt}–${maxOpt} sets (Optimal)`,
+        maxOpt,
+      };
+    } else {
+      return {
+        zone: 'Over-Training Risk',
+        badgeBg: 'bg-amber-50 text-amber-700 border-amber-200 font-bold',
+        progressBarBg: 'bg-amber-500',
+        textColor: 'text-amber-600',
+        icon: AlertTriangle,
+        label: `>${maxOpt} sets (High Fatigue)`,
+        maxOpt,
+      };
+    }
+  };
 
   // Dynamically group targeted muscles by category from the EXERCISES list
-  const categoryMuscles = React.useMemo(() => {
+  const categoryMuscles = useMemo(() => {
     const mapping: Record<string, Set<string>> = {
       Chest: new Set(),
       Back: new Set(),
@@ -376,21 +452,112 @@ export const MuscleGroupsPage: React.FC = () => {
 
   return (
     <AnimatedPage>
-      <div className="space-y-8">
+      <div className="space-y-4 sm:space-y-8 pb-24">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+        <div className="space-y-0.5">
+          <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
             Muscle Anatomy Map
           </h1>
-          <p className="text-slate-500 mt-1 font-medium">
-            Explore the primary muscle targets of each body part. Click a card to view detailed body labeling, and interact with the anatomy.
+          <p className="text-slate-500 text-xs sm:text-sm font-medium">
+            Explore primary muscle targets, set volume, and hypertrophy zones.
           </p>
+        </div>
+
+        {/* Weekly/Monthly Hypertrophy Zones Status Banner */}
+        <div className="glass-card p-3 sm:p-5 border border-white/60 shadow-neu-outset space-y-2.5 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/40 pb-2.5 sm:pb-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 shrink-0">
+                <Flame className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-extrabold text-slate-800 text-xs sm:text-base leading-tight truncate">
+                  {isMonthly ? 'Monthly Hypertrophy (30 Days)' : 'Weekly Hypertrophy (7 Days)'}
+                </h3>
+                <p className="text-slate-400 text-[10px] sm:text-xs font-medium truncate">
+                  {isMonthly ? 'Target: 40–80 sets / month' : 'Target: 10–20 sets / week'}
+                </p>
+              </div>
+            </div>
+
+            {/* Timeframe Toggle Buttons & Legend */}
+            <div className="flex items-center justify-between sm:justify-end gap-2 flex-wrap">
+              <div className="neu-card-inset p-0.5 sm:p-1 flex items-center gap-0.5 sm:gap-1 rounded-xl bg-slate-200/60">
+                <button
+                  type="button"
+                  onClick={() => setTimeframe('weekly')}
+                  className={`px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
+                    timeframe === 'weekly'
+                      ? 'bg-white text-primary-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Weekly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeframe('monthly')}
+                  className={`px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
+                    timeframe === 'monthly'
+                      ? 'bg-white text-primary-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Monthly
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-[9px] sm:text-xs font-semibold">
+                <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-slate-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" /> Maint. (&lt;{isMonthly ? '40' : '10'})
+                </span>
+                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-emerald-200 font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Optimal ({isMonthly ? '40-80' : '10-20'})
+                </span>
+                <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-amber-200 font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> High (&gt;{isMonthly ? '80' : '20'})
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+            {categories.map((cat) => {
+              const sets = muscleVolume[cat] || 0;
+              const status = getHypertrophyZone(sets);
+              const IconComp = status.icon;
+
+              return (
+                <div key={cat} className="p-2 sm:p-3 bg-white/60 rounded-xl border border-slate-200/50 space-y-1 neu-card-inset">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-slate-800 text-[11px] sm:text-xs truncate">{cat}</span>
+                    <span className={`text-[10px] sm:text-[11px] font-black ${status.textColor} shrink-0`}>{sets} sets</span>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="w-full h-1 sm:h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${status.progressBarBg} transition-all duration-300`}
+                      style={{ width: `${Math.min(100, (sets / status.maxOpt) * 100)}%` }}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1 min-w-0">
+                    <IconComp className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${status.textColor} shrink-0`} />
+                    <span className="text-[8px] sm:text-[9px] font-bold truncate text-slate-500">{status.zone}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Categories Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((cat) => {
             const muscles = categoryMuscles[cat] || [];
+            const setsCount = muscleVolume[cat] || 0;
+            const status = getHypertrophyZone(setsCount);
             
             return (
               <div
@@ -399,13 +566,27 @@ export const MuscleGroupsPage: React.FC = () => {
                 className="glass-card p-6 shadow-neu-outset border border-white/60 hover:scale-[1.01] transition-transform duration-150 cursor-pointer flex flex-col justify-between group"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xl font-extrabold text-slate-800 group-hover:text-primary-500 transition-colors">
-                      {cat}
-                    </span>
-                    <div className="p-2 shadow-neu-inset bg-[#e8ebf0] text-primary-500 rounded-xl group-hover:scale-105 transition-transform duration-200">
-                      <Activity className="w-4 h-4" />
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <span className="text-xl font-extrabold text-slate-800 group-hover:text-primary-500 transition-colors">
+                        {cat}
+                      </span>
+                      <span className="block text-[11px] font-semibold text-slate-400 mt-0.5">
+                        {setsCount} sets logged ({isMonthly ? 'last 30 days' : 'last 7 days'})
+                      </span>
                     </div>
+
+                    <span className={`inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full border ${status.badgeBg}`}>
+                      {status.zone}
+                    </span>
+                  </div>
+
+                  {/* Visual Progress Bar for Hypertrophy Goal */}
+                  <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mb-4">
+                    <div
+                      className={`h-full ${status.progressBarBg} transition-all duration-300`}
+                      style={{ width: `${Math.min(100, (setsCount / status.maxOpt) * 100)}%` }}
+                    />
                   </div>
 
                   {/* Muscle anatomy illustration */}
