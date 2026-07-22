@@ -47,6 +47,7 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedMuscle, setSelectedMuscle] = useState<string>('All');
   const [tempSelectedExercises, setTempSelectedExercises] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [hideLogged, setHideLogged] = useState(false);
@@ -132,6 +133,34 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
     });
     return counts;
   }, [addedExerciseIds, archivedExerciseIds, hideLogged, exerciseStats]);
+  // Dynamically compute list of muscles in selectedCategories
+  const modalMusclesList = React.useMemo(() => {
+    const muscles = new Set<string>();
+    EXERCISES.forEach(ex => {
+      if (archivedExerciseIds?.includes(ex.id)) return;
+      if (hideLogged && exerciseStats[ex.id]?.count > 0) return;
+      if (selectedCategories.length === 0 || selectedCategories.includes(ex.category)) {
+        muscles.add(toGymMuscleName(ex.primaryMuscle));
+      }
+    });
+    return Array.from(muscles).sort();
+  }, [selectedCategories, archivedExerciseIds, hideLogged, exerciseStats]);
+
+  // Compute exercise counts for each muscle in selectedCategories
+  const modalMuscleCounts = React.useMemo(() => {
+    const counts: Record<string, number> = { All: 0 };
+    EXERCISES.forEach(ex => {
+      if (archivedExerciseIds?.includes(ex.id)) return;
+      if (hideLogged && exerciseStats[ex.id]?.count > 0) return;
+      if (selectedCategories.length === 0 || selectedCategories.includes(ex.category)) {
+        const gymMuscle = toGymMuscleName(ex.primaryMuscle);
+        counts.All = (counts.All || 0) + 1;
+        counts[gymMuscle] = (counts[gymMuscle] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [selectedCategories, archivedExerciseIds, hideLogged, exerciseStats]);
+
   const filteredExercisesList = EXERCISES.filter(ex => {
     const isAdded = addedExerciseIds.includes(ex.id);
     const isArchived = archivedExerciseIds?.includes(ex.id);
@@ -139,15 +168,19 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
     if (hideLogged && isLogged) return false;
 
     const matchesSearch = ex.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
+                          toGymMuscleName(ex.primaryMuscle).toLowerCase().includes(exerciseSearch.toLowerCase()) ||
                           ex.category.toLowerCase().includes(exerciseSearch.toLowerCase());
     const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(ex.category);
-    return !isAdded && !isArchived && matchesSearch && matchesCategory;
+    const matchesMuscle = selectedMuscle === 'All' || toGymMuscleName(ex.primaryMuscle) === selectedMuscle;
+    return !isAdded && !isArchived && matchesSearch && matchesCategory && matchesMuscle;
   });
 
   const toggleCategory = (cat: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
-    );
+    setSelectedCategories(prev => {
+      const next = prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat];
+      setSelectedMuscle('All');
+      return next;
+    });
   };
 
   const toggleTempExercise = (id: string, name: string) => {
@@ -431,6 +464,40 @@ export const WorkoutEditPage: React.FC<WorkoutEditPageProps> = ({ workout, onClo
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+
+                {/* Muscle Part Filter */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block px-1">
+                    Filter by Muscle Part
+                  </label>
+                  <div className="flex flex-row flex-nowrap items-center gap-1.5 overflow-x-auto scrollbar-none py-1 w-full min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMuscle('All')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border whitespace-nowrap ${
+                        selectedMuscle === 'All'
+                          ? 'bg-slate-700 border-slate-800 text-white shadow-sm'
+                          : 'bg-white/80 border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      All Muscles <span className="text-[9px] opacity-75 ml-0.5">({modalMuscleCounts.All})</span>
+                    </button>
+                    {modalMusclesList.map((muscle) => (
+                      <button
+                        key={muscle}
+                        type="button"
+                        onClick={() => setSelectedMuscle(muscle)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border whitespace-nowrap ${
+                          selectedMuscle === muscle
+                            ? 'bg-slate-700 border-slate-800 text-white shadow-sm'
+                            : 'bg-white/80 border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {muscle} <span className="text-[9px] opacity-75 ml-0.5">({modalMuscleCounts[muscle] || 0})</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>

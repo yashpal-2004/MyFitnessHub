@@ -14,6 +14,7 @@ const Analytics = lazy(() => import('./pages/Analytics'));
 const RecordsPage = lazy(() => import('./pages/RecordsPage').then(m => ({ default: m.RecordsPage })));
 const WorkoutHistory = lazy(() => import('./pages/WorkoutHistory').then(m => ({ default: m.WorkoutHistory })));
 const MuscleGroupsPage = lazy(() => import('./pages/MuscleGroupsPage').then(m => ({ default: m.MuscleGroupsPage })));
+const ExerciseDetailPage = lazy(() => import('./pages/ExerciseDetailPage').then(m => ({ default: m.ExerciseDetailPage })));
 
 const LoadingFallback = () => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
@@ -66,6 +67,7 @@ function App() {
               <Route path="/records" element={<RecordsPage />} />
               <Route path="/history" element={<WorkoutHistory />} />
               <Route path="/anatomy" element={<MuscleGroupsPage />} />
+              <Route path="/exercise/:exerciseId" element={<ExerciseDetailPage />} />
             </Routes>
           </AnimatePresence>
         </Suspense>

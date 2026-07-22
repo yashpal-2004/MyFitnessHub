@@ -10,7 +10,9 @@ import {
   Flame, 
   Calendar as CalendarIcon,
   Trash2,
-  Pencil
+  Pencil,
+  X,
+  Activity
 } from 'lucide-react';
 import type { Workout } from '../types';
 import { EXERCISES } from '../constants/exercises';
@@ -64,31 +66,39 @@ export const CalendarView: React.FC = () => {
     return map;
   }, {} as Record<string, Workout[]>);
 
-  const monthWorkoutsCount = workouts.filter(w => {
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const monthWorkouts = workouts.filter(w => {
     const d = new Date(w.date);
     return d.getMonth() === month && d.getFullYear() === year;
-  }).length;
+  });
 
-  let sundaysCount = 0;
+  const monthWorkoutsCount = monthWorkouts.length;
+  const monthExercisesCount = monthWorkouts.reduce((sum, w) => sum + (w.exercises?.length || 0), 0);
+
+  const monthActiveDates = new Set(monthWorkouts.map(w => w.date));
+  const activeDaysCount = monthActiveDates.size;
+
+  let missedDaysCount = 0;
   for (let d = 1; d <= totalDays; d++) {
-    if (new Date(year, month, d).getDay() === 0) {
-      sundaysCount++;
+    const dateObj = new Date(year, month, d);
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    const isSunday = dateObj.getDay() === 0;
+
+    if (dateStr < todayStr && !isSunday && (!workoutsByDate[dateStr] || workoutsByDate[dateStr].length === 0)) {
+      missedDaysCount++;
     }
   }
-
-  const monthActiveDaysForUI = Object.keys(workoutsByDate).filter(dateStr => {
-    const d = new Date(dateStr);
-    return d.getMonth() === month && d.getFullYear() === year && d.getDay() !== 0;
-  }).length;
-
-  const restDaysForUI = totalDays - sundaysCount - monthActiveDaysForUI;
 
   const getDayClass = (day: number | null, dateStr: string, isSunday: boolean) => {
     if (!day) return 'invisible';
     const isSelected = dateStr === selectedDateStr;
     const hasWorkout = workoutsByDate[dateStr]?.length > 0;
 
-    let cls = 'h-11 w-11 rounded-full flex flex-col items-center justify-center font-bold text-sm transition-all duration-150 relative border ';
+    let cls = 'h-9 w-9 sm:h-11 sm:w-11 rounded-full flex flex-col items-center justify-center font-bold text-xs sm:text-sm transition-all duration-150 relative border ';
     if (isSelected) {
       cls += 'shadow-neu-inset bg-[#d8dce2] text-primary-700 border-slate-300/40 ';
     } else if (hasWorkout) {
@@ -105,68 +115,94 @@ export const CalendarView: React.FC = () => {
 
   return (
     <AnimatedPage>
-      <div className="space-y-8">
+      <div className="space-y-4 md:space-y-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
             Workout Calendar
           </h1>
-          <p className="text-slate-500 mt-1 font-medium">
+          <p className="text-slate-500 text-xs md:text-sm font-medium hidden sm:block mt-0.5">
             Review past trainings, frequency logs, and daily details.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="neu-card p-5 flex items-center gap-4">
-            <div className="p-3 shadow-neu-inset bg-[#e8ebf0] text-primary-500 rounded-xl">
-              <Dumbbell className="w-5 h-5" />
+        {/* Top Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
+          <div className="neu-card p-3 md:p-5 flex items-center gap-2.5 md:gap-4">
+            <div className="p-2 md:p-2.5 shadow-neu-inset bg-[#e8ebf0] text-primary-500 rounded-xl flex-shrink-0">
+              <Dumbbell className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <div>
-              <span className="text-xs font-semibold text-slate-400 block uppercase tracking-wider">Workouts (This Month)</span>
-              <span className="text-xl font-extrabold text-slate-800">{monthWorkoutsCount} sessions</span>
+            <div className="min-w-0">
+              <span className="text-[9px] md:text-xs font-semibold text-slate-400 block uppercase tracking-wider truncate">Sessions</span>
+              <span className="text-xs md:text-xl font-extrabold text-slate-800 truncate">{monthWorkoutsCount} logged</span>
             </div>
           </div>
 
-          <div className="neu-card p-5 flex items-center gap-4">
-            <div className="p-3 shadow-neu-inset bg-[#e8ebf0] text-orange-500 rounded-xl">
-              <Flame className="w-5 h-5" />
+          <div className="neu-card p-3 md:p-5 flex items-center gap-2.5 md:gap-4">
+            <div className="p-2 md:p-2.5 shadow-neu-inset bg-[#e8ebf0] text-emerald-500 rounded-xl flex-shrink-0">
+              <Flame className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <div>
-              <span className="text-xs font-semibold text-slate-400 block uppercase tracking-wider">Active Training Days</span>
-              <span className="text-xl font-extrabold text-slate-800">{monthActiveDaysForUI} active / {restDaysForUI} rest</span>
+            <div className="min-w-0">
+              <span className="text-[9px] md:text-xs font-semibold text-slate-400 block uppercase tracking-wider truncate">Active Days</span>
+              <span className="text-xs md:text-xl font-extrabold text-slate-800 truncate">{activeDaysCount} active</span>
+            </div>
+          </div>
+
+          <div className="neu-card p-3 md:p-5 flex items-center gap-2.5 md:gap-4">
+            <div className="p-2 md:p-2.5 shadow-neu-inset bg-[#e8ebf0] text-rose-500 rounded-xl flex-shrink-0">
+              <X className="w-4 h-4 md:w-5 md:h-5 stroke-[2.5]" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[9px] md:text-xs font-semibold text-slate-400 block uppercase tracking-wider truncate">Missed Days</span>
+              <span className="text-xs md:text-xl font-extrabold text-rose-600 truncate">{missedDaysCount} absent</span>
+            </div>
+          </div>
+
+          <div className="neu-card p-3 md:p-5 flex items-center gap-2.5 md:gap-4">
+            <div className="p-2 md:p-2.5 shadow-neu-inset bg-[#e8ebf0] text-orange-500 rounded-xl flex-shrink-0">
+              <Activity className="w-4 h-4 md:w-5 md:h-5" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[9px] md:text-xs font-semibold text-slate-400 block uppercase tracking-wider truncate">Total Exercises</span>
+              <span className="text-xs md:text-xl font-extrabold text-slate-800 truncate">{monthExercisesCount} completed</span>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
           {/* Calendar Widget */}
-          <div className="lg:col-span-2 glass-card p-6 shadow-neu-outset border border-white/60">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-bold text-slate-800 text-lg">
+          <div className="lg:col-span-2 glass-card p-4 md:p-6 shadow-neu-outset border border-white/60">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h2 className="font-bold text-slate-800 text-base md:text-lg">
                 {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
               </h2>
               <div className="flex items-center gap-1.5">
-                <button onClick={prevMonth} className="skeuo-btn-light p-2 rounded-xl text-slate-500">
+                <button onClick={prevMonth} className="skeuo-btn-light p-1.5 md:p-2 rounded-xl text-slate-500">
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <button onClick={nextMonth} className="skeuo-btn-light p-2 rounded-xl text-slate-500">
+                <button onClick={nextMonth} className="skeuo-btn-light p-1.5 md:p-2 rounded-xl text-slate-500">
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-7 text-center gap-2 mb-2">
+            <div className="grid grid-cols-7 text-center gap-1 md:gap-2 mb-1 md:mb-2">
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-                <span key={d} className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{d}</span>
+                <span key={d} className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{d}</span>
               ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-2 text-center">
+            <div className="grid grid-cols-7 gap-1 md:gap-2 text-center">
               {daysArray.map((day, idx) => {
                 const dateStr = day
                   ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                   : '';
-                const hasWorkout = day ? workoutsByDate[dateStr]?.length > 0 : false;
+                const todayStr = new Date().toISOString().split('T')[0];
+                const dayWorkouts = day ? (workoutsByDate[dateStr] || []) : [];
+                const hasWorkout = dayWorkouts.length > 0;
+                const totalExercises = dayWorkouts.reduce((sum, w) => sum + (w.exercises?.length || 0), 0);
                 const isSunday = idx % 7 === 6;
+                const isPastDay = Boolean(dateStr && dateStr < todayStr);
+                const isAbsent = isPastDay && !hasWorkout && !isSunday;
 
                 return (
                   <div key={idx} className="flex justify-center items-center">
@@ -175,20 +211,57 @@ export const CalendarView: React.FC = () => {
                         onClick={() => setSelectedDateStr(dateStr)}
                         className={getDayClass(day, dateStr, isSunday)}
                       >
-                        {day}
+                        <span className="leading-tight">{day}</span>
                         {isSunday && !hasWorkout && (
                           <span className="text-[7px] leading-[7px] text-slate-400 font-extrabold uppercase mt-0.5 tracking-tighter">REST</span>
                         )}
-                        {hasWorkout && dateStr !== selectedDateStr && (
-                          <span className="absolute bottom-1 w-1.5 h-1.5 bg-primary-500 rounded-full" />
+                        {hasWorkout && (
+                          totalExercises === 4 ? (
+                            <span className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full ring-2 ring-white" />
+                          ) : totalExercises > 4 ? (
+                            <span className="absolute -top-1 -right-1 text-[8px] font-black text-white bg-emerald-500 rounded-full w-4 h-4 flex items-center justify-center shadow-sm ring-2 ring-white">
+                              {totalExercises}
+                            </span>
+                          ) : (
+                            <span className="absolute -top-1 -right-1 text-[8px] font-black text-white bg-rose-500 rounded-full w-4 h-4 flex items-center justify-center shadow-sm ring-2 ring-white">
+                              {totalExercises}
+                            </span>
+                          )
+                        )}
+                        {isAbsent && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-sm ring-2 ring-white" title="Absent / No Workout">
+                            <X className="w-2.5 h-2.5 stroke-[3]" />
+                          </span>
                         )}
                       </button>
                     ) : (
-                      <div className="h-11 w-11" />
+                      <div className="h-9 w-9 sm:h-11 sm:w-11" />
                     )}
                   </div>
                 );
               })}
+            </div>
+
+            {/* Calendar Legend */}
+            <div className="mt-5 pt-4 border-t border-slate-200/50 flex flex-wrap items-center justify-around gap-2 text-[10px] md:text-xs font-semibold text-slate-500">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-primary-500 rounded-full ring-2 ring-white" />
+                <span>4 Exercises (Standard)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] font-black text-white bg-emerald-500 rounded-full w-4 h-4 flex items-center justify-center shadow-sm">5+</span>
+                <span>&gt; 4 Exercises (Green)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] font-black text-white bg-rose-500 rounded-full w-4 h-4 flex items-center justify-center shadow-sm">&lt;4</span>
+                <span>&lt; 4 Exercises (Red)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-sm">
+                  <X className="w-2.5 h-2.5 stroke-[3]" />
+                </span>
+                <span>Absent (Missed Day)</span>
+              </div>
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFitnessStore } from '../store/useFitnessStore';
 import { AnimatedPage } from '../components/AnimatedPage';
-import { Trophy, Flame, Search, ArrowLeft, Calendar, Scale } from 'lucide-react';
+import { Trophy, Flame, Search, ArrowLeft, Calendar, Scale, Hash } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 export const RecordsPage: React.FC = () => {
@@ -23,6 +23,7 @@ export const RecordsPage: React.FC = () => {
       totalReps: number;
       maxWeight: number;
       lastLogged: string;
+      timesLogged: number;
     }> = {};
 
     workouts.forEach(w => {
@@ -37,12 +38,14 @@ export const RecordsPage: React.FC = () => {
             setsCount,
             totalReps,
             maxWeight,
-            lastLogged: w.date
+            lastLogged: w.date,
+            timesLogged: 1
           };
         } else {
           const current = exerciseStatsMap[ex.exerciseId];
           current.setsCount += setsCount;
           current.totalReps += totalReps;
+          current.timesLogged += 1;
           if (maxWeight > current.maxWeight) {
             current.maxWeight = maxWeight;
           }
@@ -58,6 +61,17 @@ export const RecordsPage: React.FC = () => {
       ...stats
     }));
   };
+
+  // Count times logged per exercise (for PR cards)
+  const exerciseTimesLoggedMap = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    workouts.forEach(w => {
+      w.exercises.forEach(ex => {
+        map[ex.exerciseId] = (map[ex.exerciseId] ?? 0) + 1;
+      });
+    });
+    return map;
+  }, [workouts]);
 
   const trackedExercises = getTrackedExerciseStats();
 
@@ -180,13 +194,21 @@ export const RecordsPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredPrs.map((pr) => (
-                <div key={pr.exerciseId} className="glass-card p-5 shadow-neu-outset border border-white/60 flex items-center justify-between group hover:scale-[1.01] transition-transform duration-150">
+                <Link
+                  key={pr.exerciseId}
+                  to={`/exercise/${pr.exerciseId}`}
+                  className="glass-card p-5 shadow-neu-outset border border-white/60 flex items-center justify-between group hover:scale-[1.01] hover:ring-2 hover:ring-primary-300/50 transition-all duration-150 cursor-pointer"
+                >
                   <div>
                     <h4 className="font-extrabold text-slate-800 text-base">{pr.exerciseName}</h4>
-                    <div className="flex items-center gap-2 text-xs text-slate-455 mt-1 font-medium">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-1 font-medium">
                       <Calendar className="w-3.5 h-3.5" />
                       <span>Last PR: {pr.latestDate}</span>
                     </div>
+                    <span className="inline-flex items-center gap-1 mt-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                      <Hash className="w-2.5 h-2.5" />
+                      Logged {exerciseTimesLoggedMap[pr.exerciseId] ?? 0} time{(exerciseTimesLoggedMap[pr.exerciseId] ?? 0) !== 1 ? 's' : ''}
+                    </span>
                   </div>
                   <div className="flex gap-2">
                     {pr.weightPr && (
@@ -200,7 +222,7 @@ export const RecordsPage: React.FC = () => {
                       </span>
                     )}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )
@@ -215,14 +237,28 @@ export const RecordsPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredTracked.map((ex) => (
-                <div key={ex.id} className="glass-card p-5 shadow-neu-outset border border-white/60 flex flex-col justify-between hover:scale-[1.01] transition-transform duration-150">
+                <Link
+                  key={ex.id}
+                  to={`/exercise/${ex.id}`}
+                  className="glass-card p-5 shadow-neu-outset border border-white/60 flex flex-col justify-between hover:scale-[1.01] hover:ring-2 hover:ring-primary-300/50 transition-all duration-150 cursor-pointer"
+                >
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-extrabold text-slate-800 text-base flex-1">{ex.exerciseName}</h4>
-                    <span className="bg-primary-50 text-primary-600 font-extrabold text-xs px-2.5 py-1.5 rounded-lg border border-primary-100 flex items-center gap-1">
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 text-base">{ex.exerciseName}</h4>
+                      <span className="inline-flex items-center gap-1 mt-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                        <Hash className="w-2.5 h-2.5" />
+                        Logged {ex.timesLogged} time{ex.timesLogged !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <span className="bg-primary-50 text-primary-600 font-extrabold text-xs px-2.5 py-1.5 rounded-lg border border-primary-100 flex items-center gap-1 shrink-0">
                       <Scale className="w-3 h-3" /> Max: {ex.maxWeight} kg
                     </span>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-200/40 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="mt-4 pt-3 border-t border-slate-200/40 grid grid-cols-4 gap-2 text-center text-xs">
+                    <div>
+                      <span className="text-slate-400 font-bold uppercase text-[9px] block">Sessions</span>
+                      <span className="text-slate-800 font-extrabold text-sm">{ex.timesLogged}</span>
+                    </div>
                     <div>
                       <span className="text-slate-400 font-bold uppercase text-[9px] block">Sets</span>
                       <span className="text-slate-800 font-extrabold text-sm">{ex.setsCount}</span>
@@ -236,7 +272,7 @@ export const RecordsPage: React.FC = () => {
                       <span className="text-slate-850 font-bold">{ex.lastLogged}</span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )

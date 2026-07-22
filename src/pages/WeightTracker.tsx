@@ -110,31 +110,36 @@ export const WeightTracker: React.FC = () => {
 
   return (
     <AnimatedPage>
-      <div className="space-y-8">
+      <div className="space-y-4 md:space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
             Weight Tracker
           </h1>
-          <p className="text-slate-500 mt-1 font-medium">
+          <p className="text-slate-500 text-xs md:text-sm font-medium hidden sm:block mt-0.5">
             Monitor and analyze your body weight progress over time.
           </p>
         </div>
 
         {/* Top summary metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="neu-card p-6 flex items-center gap-4">
-            <div className="p-3 shadow-neu-inset bg-[#e8ebf0] text-primary-500 rounded-2xl">
-              <Scale className="w-6 h-6" />
+        <div className="grid grid-cols-3 gap-2 md:gap-6">
+          <div className="neu-card p-2.5 md:p-6 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-left gap-1 md:gap-4">
+            <div className="p-1.5 md:p-3 shadow-neu-inset bg-[#e8ebf0] text-primary-500 rounded-xl md:rounded-2xl flex-shrink-0">
+              <Scale className="w-4 h-4 md:w-6 md:h-6" />
             </div>
-            <div>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Latest Weight</span>
-              <span className="text-2xl font-extrabold text-slate-800">{latestWeight ? `${latestWeight} kg` : '--'}</span>
+            <div className="min-w-0">
+              <span className="text-[9px] md:text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                <span className="md:hidden">Latest</span>
+                <span className="hidden md:inline">Latest Weight</span>
+              </span>
+              <span className="text-xs md:text-2xl font-extrabold text-slate-800 block whitespace-nowrap">
+                {latestWeight ? `${latestWeight} kg` : '--'}
+              </span>
             </div>
           </div>
 
-          <div className="neu-card p-6 flex items-center gap-4">
-            <div className={`p-3 shadow-neu-inset bg-[#e8ebf0] rounded-2xl ${
+          <div className="neu-card p-2.5 md:p-6 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-left gap-1 md:gap-4">
+            <div className={`p-1.5 md:p-3 shadow-neu-inset bg-[#e8ebf0] rounded-xl md:rounded-2xl flex-shrink-0 ${
               weightChange.trend === 'down' 
                 ? 'text-emerald-600' 
                 : weightChange.trend === 'up' 
@@ -142,40 +147,48 @@ export const WeightTracker: React.FC = () => {
                   : 'text-slate-500'
             }`}>
               {weightChange.trend === 'down' ? (
-                <TrendingDown className="w-6 h-6" />
+                <TrendingDown className="w-4 h-4 md:w-6 md:h-6" />
               ) : weightChange.trend === 'up' ? (
-                <TrendingUp className="w-6 h-6" />
+                <TrendingUp className="w-4 h-4 md:w-6 md:h-6" />
               ) : (
-                <Activity className="w-6 h-6" />
+                <Activity className="w-4 h-4 md:w-6 md:h-6" />
               )}
             </div>
-            <div>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Recent Change</span>
-              <span className="text-2xl font-extrabold text-slate-800">
+            <div className="min-w-0">
+              <span className="text-[9px] md:text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                <span className="md:hidden">Change</span>
+                <span className="hidden md:inline">Recent Change</span>
+              </span>
+              <span className="text-xs md:text-2xl font-extrabold text-slate-800 block whitespace-nowrap">
                 {weightChange.value > 0 ? `${weightChange.trend === 'up' ? '+' : '-'}${weightChange.value} kg` : 'Stable'}
               </span>
             </div>
           </div>
 
-          <div className="neu-card p-6 flex items-center gap-4">
-            <div className="p-3 shadow-neu-inset bg-[#e8ebf0] text-indigo-500 rounded-2xl">
-              <Calendar className="w-6 h-6" />
+          <div className="neu-card p-2.5 md:p-6 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-left gap-1 md:gap-4">
+            <div className="p-1.5 md:p-3 shadow-neu-inset bg-[#e8ebf0] text-indigo-500 rounded-xl md:rounded-2xl flex-shrink-0">
+              <Calendar className="w-4 h-4 md:w-6 md:h-6" />
             </div>
-            <div>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Logs Registered</span>
-              <span className="text-2xl font-extrabold text-slate-800">{bodyWeights.length} logs</span>
+            <div className="min-w-0">
+              <span className="text-[9px] md:text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                <span className="md:hidden">Logs</span>
+                <span className="hidden md:inline">Logs Registered</span>
+              </span>
+              <span className="text-xs md:text-2xl font-extrabold text-slate-800 block whitespace-nowrap">
+                {bodyWeights.length} <span className="hidden md:inline">logs</span>
+              </span>
             </div>
           </div>
         </div>
 
         {/* Chart Section */}
-        <div className="glass-card p-6 shadow-neu-outset border border-white/60">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-slate-800">Weight Trend</h2>
+        <div className="glass-card p-4 md:p-6 shadow-neu-outset border border-white/60">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h2 className="text-base md:text-lg font-bold text-slate-800">Weight Trend</h2>
             <div className="neu-card-inset p-1 flex gap-1">
               <button
                 onClick={() => setTimeframe('weekly')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`px-2.5 py-1 md:px-3.5 md:py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition-all ${
                   timeframe === 'weekly' 
                     ? 'shadow-neu-inset bg-[#d8dce2] text-primary-700' 
                     : 'text-slate-500 hover:text-slate-800'
@@ -185,7 +198,7 @@ export const WeightTracker: React.FC = () => {
               </button>
               <button
                 onClick={() => setTimeframe('monthly')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`px-2.5 py-1 md:px-3.5 md:py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition-all ${
                   timeframe === 'monthly' 
                     ? 'shadow-neu-inset bg-[#d8dce2] text-primary-700' 
                     : 'text-slate-500 hover:text-slate-800'
@@ -196,7 +209,7 @@ export const WeightTracker: React.FC = () => {
             </div>
           </div>
 
-          <div className="h-72 w-full">
+          <div className="h-56 md:h-72 w-full">
             {bodyWeights.length === 0 ? (
               <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
                 Add weight logs below to visualize trends.
@@ -248,9 +261,9 @@ export const WeightTracker: React.FC = () => {
         </div>
 
         {/* Logger and Logs Table split */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
           {/* Add / Edit Form */}
-          <div className="neu-card p-6 h-fit">
+          <div className="neu-card p-4 md:p-6 h-fit">
             <h3 className="font-bold text-slate-800 text-base mb-4">
               {editingEntry ? 'Edit Entry' : 'Log Weight'}
             </h3>
@@ -295,7 +308,7 @@ export const WeightTracker: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex-1 inline-flex items-center justify-center gap-2 skeuo-btn-orange text-white py-2.5 rounded-xl disabled:opacity-50 text-sm"
+                  className="flex-1 inline-flex items-center justify-center gap-2 skeuo-btn-orange text-white py-2.5 rounded-xl disabled:opacity-50 text-sm font-bold shadow-skeuo-button"
                 >
                   <Plus className="w-4 h-4" />
                   {editingEntry ? 'Update' : 'Add Log'}
@@ -317,7 +330,7 @@ export const WeightTracker: React.FC = () => {
           </div>
 
           {/* Logs List */}
-          <div className="lg:col-span-2 glass-card p-6 shadow-neu-outset border border-white/60">
+          <div className="lg:col-span-2 glass-card p-4 md:p-6 shadow-neu-outset border border-white/60">
             <h3 className="font-bold text-slate-800 text-base mb-4">Past Logs</h3>
 
             {bodyWeights.length === 0 ? (
