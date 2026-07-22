@@ -14,6 +14,10 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
+  BookOpen,
+  CheckCircle2,
+  AlertCircle,
+  Target,
 } from 'lucide-react';
 import { useState } from 'react';
 import { EXERCISES } from '../constants/exercises';
@@ -158,6 +162,7 @@ interface SessionData {
   sessionVolume: number;
   isWeightPR: boolean;
   isVolumePR: boolean;
+  weightGainFromStart?: number;
 }
 
 const SessionCard: React.FC<{ session: SessionData; index: number; total: number }> = ({
@@ -221,7 +226,14 @@ const SessionCard: React.FC<{ session: SessionData; index: number; total: number
           </div>
           <div className="flex items-center gap-3 shrink-0 ml-2">
             <div className="text-right">
-              <span className="block text-xs font-bold text-slate-800">{session.sessionMaxWeight} kg</span>
+              <div className="flex items-center justify-end gap-1.5">
+                <span className="block text-xs sm:text-sm font-bold text-slate-800">{session.sessionMaxWeight} kg</span>
+                {(session.weightGainFromStart ?? 0) > 0 && (
+                  <span className="inline-flex items-center text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    +{session.weightGainFromStart} kg
+                  </span>
+                )}
+              </div>
               <span className="block text-[10px] text-slate-400 font-medium">{session.sets.length} sets</span>
             </div>
             {open ? (
@@ -323,7 +335,11 @@ export const ExerciseDetailPage: React.FC = () => {
       }
     }
 
-    return result;
+    const initialWeight = result[0]?.sessionMaxWeight ?? 0;
+    return result.map((sess) => ({
+      ...sess,
+      weightGainFromStart: sess.sessionMaxWeight - initialWeight,
+    }));
   }, [workouts, exerciseId]);
 
   const exerciseName =
@@ -346,6 +362,12 @@ export const ExerciseDetailPage: React.FC = () => {
   const maxVolume = sessions.reduce((m, s) => (s.sessionVolume > m ? s.sessionVolume : m), 0);
   const firstDate = sessions[0]?.date ?? '—';
   const lastDate = sessions[sessions.length - 1]?.date ?? '—';
+
+  // Weight gain calculations
+  const firstSessionMaxWeight = sessions[0]?.sessionMaxWeight ?? 0;
+  const latestSessionMaxWeight = sessions[sessions.length - 1]?.sessionMaxWeight ?? 0;
+  const totalWeightGain = latestSessionMaxWeight - firstSessionMaxWeight;
+  const weightGainPercent = firstSessionMaxWeight > 0 ? Math.round((totalWeightGain / firstSessionMaxWeight) * 100) : 0;
 
   // Chart data — max weight per session
   const weightChartPoints: ChartPoint[] = sessions.map((s) => ({
@@ -434,7 +456,7 @@ export const ExerciseDetailPage: React.FC = () => {
 
   return (
     <AnimatedPage>
-      <div className="max-w-3xl mx-auto space-y-3.5 sm:space-y-6 pb-24 sm:pb-12">
+      <div className="max-w-6xl xl:max-w-7xl mx-auto space-y-4 sm:space-y-6 pb-24 sm:pb-12">
 
         {/* Header */}
         <div className="glass-card p-3.5 sm:p-6 border border-white/60 shadow-neu-outset flex items-center gap-3 sm:gap-5">
@@ -468,17 +490,17 @@ export const ExerciseDetailPage: React.FC = () => {
           <div className="flex-1 min-w-0 space-y-1 sm:space-y-1.5">
             <div className="flex items-center gap-1.5 flex-wrap">
               {exerciseDetails?.category && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-primary-50 text-primary-600 border border-primary-100">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-primary-50 text-primary-600 border border-primary-100">
                   {exerciseDetails.category}
                 </span>
               )}
               {exerciseDetails?.primaryMuscle && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   {exerciseDetails.primaryMuscle}
                 </span>
               )}
               {exerciseDetails?.equipment && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                   {exerciseDetails.equipment}
                 </span>
               )}
@@ -488,105 +510,150 @@ export const ExerciseDetailPage: React.FC = () => {
               {exerciseName}
             </h1>
 
-            <p className="text-slate-400 text-xs sm:text-sm font-medium truncate">
-              {sessions.length} session{sessions.length !== 1 ? 's' : ''} · Progress history
+            <p className="text-slate-400 text-xs sm:text-sm font-medium flex items-center gap-2 flex-wrap">
+              <span>{sessions.length} session{sessions.length !== 1 ? 's' : ''} · Progress history</span>
+              {sessions.length > 1 && (
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  totalWeightGain > 0 
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                    : totalWeightGain < 0 
+                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                }`}>
+                  <TrendingUp className="w-3 h-3" />
+                  {totalWeightGain >= 0 ? `+${totalWeightGain} kg` : `${totalWeightGain} kg`} Gain
+                </span>
+              )}
             </p>
           </div>
         </div>
 
-        {/* PR Badges */}
-        {(weightPr || volumePr) && (
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            {weightPr && (
-              <div className="flex items-center gap-2 sm:gap-3 bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-300/60 rounded-xl sm:rounded-2xl p-2.5 sm:px-4 sm:py-3 shadow-sm">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-b from-yellow-400 to-yellow-600 flex items-center justify-center shadow-sm shrink-0">
-                  <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="text-[9px] sm:text-[10px] font-bold text-yellow-700 uppercase tracking-wide truncate">Weight PR</p>
-                    <span className="text-[8px] sm:text-[10px] text-yellow-600 font-medium truncate">{weightPr.date}</span>
-                  </div>
-                  <p className="text-sm sm:text-lg font-black text-yellow-800 leading-tight">{weightPr.value} kg</p>
-                </div>
-              </div>
-            )}
-            {volumePr && (
-              <div className="flex items-center gap-2 sm:gap-3 bg-gradient-to-br from-orange-50 to-red-50 border border-orange-300/60 rounded-xl sm:rounded-2xl p-2.5 sm:px-4 sm:py-3 shadow-sm">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-b from-orange-400 to-orange-600 flex items-center justify-center shadow-sm shrink-0">
-                  <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="text-[9px] sm:text-[10px] font-bold text-orange-700 uppercase tracking-wide truncate">Volume PR</p>
-                    <span className="text-[8px] sm:text-[10px] text-orange-600 font-medium truncate">{volumePr.date}</span>
-                  </div>
-                  <p className="text-sm sm:text-lg font-black text-orange-800 leading-tight">{volumePr.value} vol</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Responsive Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+          
+          {/* Main Left Column (Charts & Session History Timeline) */}
+          <div className="lg:col-span-7 xl:col-span-8 space-y-4 sm:space-y-6">
 
-        {/* Summary stats */}
-        <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-3">
-          {[
-            { icon: Hash, label: 'Sessions', value: sessions.length, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
-            { icon: Layers, label: 'Sets', value: totalSets, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100' },
-            { icon: RotateCcw, label: 'Reps', value: totalReps, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-            { icon: Dumbbell, label: 'Max Weight', value: `${maxWeight} kg`, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-100' },
-            { icon: TrendingUp, label: 'Max Volume', value: maxVolume, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
-            { icon: Calendar, label: 'First → Last', value: `${firstDate}`, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', sub: lastDate },
-          ].map(({ icon: Icon, label, value, color, bg, border, sub }) => (
-            <div key={label} className="glass-card p-2.5 sm:p-4 border border-white/60 shadow-neu-outset min-w-0">
-              <div className={`inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-md sm:rounded-lg ${bg} border ${border} mb-1 sm:mb-2`}>
-                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${color}`} />
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
+              {/* Weight over time chart */}
+              <div className="glass-card p-3.5 sm:p-5 border border-white/60 shadow-neu-outset">
+                <h3 className="font-extrabold text-slate-800 text-xs sm:text-sm mb-0.5 flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-500" />
+                  Max Weight per Session (kg)
+                </h3>
+                <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium mb-2">Trend from first to latest session</p>
+                <LineChart points={weightChartPoints} label="weight" color="#6366f1" />
               </div>
-              <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wide truncate">{label}</p>
-              <p className={`text-sm sm:text-lg font-black ${color} leading-tight truncate`}>{value}</p>
-              {sub && <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium truncate">{sub}</p>}
+
+              {/* Volume over time chart */}
+              <div className="glass-card p-3.5 sm:p-5 border border-white/60 shadow-neu-outset">
+                <h3 className="font-extrabold text-slate-800 text-xs sm:text-sm mb-0.5 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
+                  Session Volume (kg × reps)
+                </h3>
+                <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium mb-2">Total volume lifted per session</p>
+                <LineChart points={volumeChartPoints} label="volume" color="#f97316" />
+              </div>
             </div>
-          ))}
-        </div>
 
-        {/* Weight over time chart */}
-        <div className="glass-card p-3.5 sm:p-5 border border-white/60 shadow-neu-outset">
-          <h3 className="font-extrabold text-slate-800 text-xs sm:text-sm mb-0.5 flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-500" />
-            Max Weight per Session (kg)
-          </h3>
-          <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium mb-2">Trend from first to latest session</p>
-          <LineChart points={weightChartPoints} label="weight" color="#6366f1" />
-        </div>
+            {/* Session timeline */}
+            <div>
+              <h3 className="font-extrabold text-slate-800 text-sm sm:text-base mb-3 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-slate-500" />
+                Session Timeline
+                <span className="text-slate-400 font-medium text-xs">· tap to expand</span>
+              </h3>
+              <div>
+                {[...sessions].reverse().map((session, i) => (
+                  <SessionCard
+                    key={`${session.workoutId}-${session.date}`}
+                    session={session}
+                    index={i}
+                    total={sessions.length}
+                  />
+                ))}
+              </div>
+            </div>
 
-        {/* Volume over time chart */}
-        <div className="glass-card p-3.5 sm:p-5 border border-white/60 shadow-neu-outset">
-          <h3 className="font-extrabold text-slate-800 text-xs sm:text-sm mb-0.5 flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
-            Session Volume (kg × reps)
-          </h3>
-          <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium mb-2">Total volume lifted per session</p>
-          <LineChart points={volumeChartPoints} label="volume" color="#f97316" />
-        </div>
-
-        {/* Session timeline */}
-        <div>
-          <h3 className="font-extrabold text-slate-800 text-sm sm:text-base mb-3 flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-slate-500" />
-            Session Timeline
-            <span className="text-slate-400 font-medium text-xs">· tap to expand</span>
-          </h3>
-          <div>
-            {[...sessions].reverse().map((session, i) => (
-              <SessionCard
-                key={`${session.workoutId}-${session.date}`}
-                session={session}
-                index={i}
-                total={sessions.length}
-              />
-            ))}
           </div>
+
+          {/* Sidebar Right Column (PRs, Stats & Form Guide) */}
+          <div className="lg:col-span-5 xl:col-span-4 space-y-4 sm:space-y-6">
+
+            {/* PR Badges */}
+            {(weightPr || volumePr) && (
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {weightPr && (
+                  <div className="flex items-center gap-2 sm:gap-3 bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-300/60 rounded-xl sm:rounded-2xl p-2.5 sm:px-4 sm:py-3 shadow-sm">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-b from-yellow-400 to-yellow-600 flex items-center justify-center shadow-sm shrink-0">
+                      <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-[9px] sm:text-[10px] font-bold text-yellow-700 uppercase tracking-wide truncate">Weight PR</p>
+                        <span className="text-[8px] sm:text-[10px] text-yellow-600 font-medium truncate">{weightPr.date}</span>
+                      </div>
+                      <p className="text-sm sm:text-lg font-black text-yellow-800 leading-tight">{weightPr.value} kg</p>
+                    </div>
+                  </div>
+                )}
+                {volumePr && (
+                  <div className="flex items-center gap-2 sm:gap-3 bg-gradient-to-br from-orange-50 to-red-50 border border-orange-300/60 rounded-xl sm:rounded-2xl p-2.5 sm:px-4 sm:py-3 shadow-sm">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-b from-orange-400 to-orange-600 flex items-center justify-center shadow-sm shrink-0">
+                      <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-[9px] sm:text-[10px] font-bold text-orange-700 uppercase tracking-wide truncate">Volume PR</p>
+                        <span className="text-[8px] sm:text-[10px] text-orange-600 font-medium truncate">{volumePr.date}</span>
+                      </div>
+                      <p className="text-sm sm:text-lg font-black text-orange-800 leading-tight">{volumePr.value} vol</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Summary stats */}
+            <div>
+              <h3 className="font-extrabold text-slate-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">
+                <Hash className="w-3.5 h-3.5 text-primary-500" />
+                Exercise Statistics
+              </h3>
+              <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3">
+                {[
+                  { icon: Hash, label: 'Sessions', value: sessions.length, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
+                  { 
+                    icon: TrendingUp, 
+                    label: 'Weight Gain', 
+                    value: totalWeightGain >= 0 ? `+${totalWeightGain} kg` : `${totalWeightGain} kg`, 
+                    color: totalWeightGain > 0 ? 'text-emerald-600' : totalWeightGain < 0 ? 'text-rose-600' : 'text-slate-600', 
+                    bg: totalWeightGain > 0 ? 'bg-emerald-50' : totalWeightGain < 0 ? 'bg-rose-50' : 'bg-slate-50', 
+                    border: totalWeightGain > 0 ? 'border-emerald-100' : totalWeightGain < 0 ? 'border-rose-100' : 'border-slate-200', 
+                    sub: sessions.length > 1 ? `${firstSessionMaxWeight}kg → ${latestSessionMaxWeight}kg` : 'Baseline' 
+                  },
+                  { icon: Layers, label: 'Sets', value: totalSets, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100' },
+                  { icon: RotateCcw, label: 'Reps', value: totalReps, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+                  { icon: Dumbbell, label: 'Max Weight', value: `${maxWeight} kg`, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-100' },
+                  { icon: TrendingUp, label: 'Max Volume', value: maxVolume, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
+                ].map(({ icon: Icon, label, value, color, bg, border, sub }) => (
+                  <div key={label} className="glass-card p-2.5 sm:p-3.5 border border-white/60 shadow-neu-outset min-w-0">
+                    <div className={`inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg ${bg} border ${border} mb-1`}>
+                      <Icon className={`w-3.5 h-3.5 ${color}`} />
+                    </div>
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wide truncate">{label}</p>
+                    <p className={`text-sm sm:text-base font-black ${color} leading-tight truncate`}>{value}</p>
+                    {sub && <p className="text-[8px] sm:text-[9px] text-slate-400 font-medium truncate">{sub}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
         </div>
+
       </div>
     </AnimatedPage>
   );
