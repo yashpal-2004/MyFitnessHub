@@ -21,8 +21,6 @@ import {
   Calendar, 
   Target, 
   Flame,
-  TrendingUp,
-  TrendingDown,
   ArrowUpRight,
   ArrowDownRight,
   Layers,

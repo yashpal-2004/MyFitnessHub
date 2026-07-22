@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { EXERCISES } from '../constants/exercises';
 import { useFitnessStore } from '../store/useFitnessStore';
 import { AnimatedPage } from '../components/AnimatedPage';
-import { Activity, ChevronRight, ArrowLeft, Info, Flame, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Activity, ChevronRight, ArrowLeft, Info, Flame, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toGymMuscleName } from '../utils/muscleMapper';
 
 const getCategoryFrontImageUrl = (category: string) => {

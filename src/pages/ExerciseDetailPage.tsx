@@ -14,10 +14,6 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
-  BookOpen,
-  CheckCircle2,
-  AlertCircle,
-  Target,
 } from 'lucide-react';
 import { useState } from 'react';
 import { EXERCISES } from '../constants/exercises';
@@ -360,14 +356,11 @@ export const ExerciseDetailPage: React.FC = () => {
   );
   const maxWeight = sessions.reduce((m, s) => (s.sessionMaxWeight > m ? s.sessionMaxWeight : m), 0);
   const maxVolume = sessions.reduce((m, s) => (s.sessionVolume > m ? s.sessionVolume : m), 0);
-  const firstDate = sessions[0]?.date ?? '—';
-  const lastDate = sessions[sessions.length - 1]?.date ?? '—';
 
   // Weight gain calculations
   const firstSessionMaxWeight = sessions[0]?.sessionMaxWeight ?? 0;
   const latestSessionMaxWeight = sessions[sessions.length - 1]?.sessionMaxWeight ?? 0;
   const totalWeightGain = latestSessionMaxWeight - firstSessionMaxWeight;
-  const weightGainPercent = firstSessionMaxWeight > 0 ? Math.round((totalWeightGain / firstSessionMaxWeight) * 100) : 0;
 
   // Chart data — max weight per session
   const weightChartPoints: ChartPoint[] = sessions.map((s) => ({
