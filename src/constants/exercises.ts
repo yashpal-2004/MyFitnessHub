@@ -2548,7 +2548,35 @@ export const EXERCISES: ExerciseWithImage[] = [
       "Letting the knees collapse inward"
     ],
     "image": "/exercises/smith-machine-squat.png"
+  },
+  {
+    "id": "wide-grip-neutral-grip-lat-pulldown",
+    "name": "Wide-Grip Neutral-Grip Lat Pulldown",
+    "category": "Back",
+    "primaryMuscle": "Latissimus Dorsi",
+    "secondaryMuscles": [
+      "Biceps",
+      "Rhomboids",
+      "Lower Trapezius",
+      "Rear Deltoids"
+    ],
+    "equipment": "Cables",
+    "difficulty": "Beginner",
+    "instructions": [
+      "Attach the wide multi-grip (neutral grip) bar to the lat pulldown machine and adjust the knee pad to secure your thighs.",
+      "Grip the bar with your palms facing each other (neutral grip) at a wide position.",
+      "Sit down, tucking your thighs under the pads, and extend your arms fully to stretch the lats.",
+      "Pull the bar down toward your upper chest by driving your elbows down and back, squeezing your shoulder blades together at the bottom.",
+      "Slowly extend your arms back to the starting position under control."
+    ],
+    "commonMistakes": [
+      "Using momentum by leaning back excessively to pull the weight",
+      "Pulling with the hands and forearms instead of driving through the elbows",
+      "Shrugging the shoulders up toward the ears during the pull"
+    ],
+    "image": "/exercises/wide-neutral-lat-pulldown.png"
   }
 ];
+
 
 
