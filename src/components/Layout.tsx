@@ -9,7 +9,11 @@ import {
   WifiOff,
   RefreshCw,
   History,
-  Target
+  Target,
+  Menu,
+  X,
+  PlusCircle,
+  Trophy
 } from 'lucide-react';
 import { useFitnessStore } from '../store/useFitnessStore';
 
@@ -20,12 +24,20 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { isOnline, syncStatus, lastSynced, pendingActions, triggerSync } = useFitnessStore();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  const navItems = [
+  const mobileBottomItems = [
+    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/exercises', label: 'Exercises', icon: Dumbbell },
+    { path: '/calendar', label: 'Calendar', icon: Calendar },
+    { path: '/weight', label: 'Weight', icon: Scale },
+  ];
+
+  const allNavItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/exercises', label: 'Exercises', icon: Dumbbell },
     { path: '/anatomy', label: 'Anatomy', icon: Target },
@@ -33,6 +45,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/calendar', label: 'Calendar', icon: Calendar },
     { path: '/weight', label: 'Weight', icon: Scale },
     { path: '/analytics', label: 'Analytics', icon: LineChart },
+    { path: '/log', label: 'Log Workout', icon: PlusCircle },
+    { path: '/records', label: 'PR Records', icon: Trophy },
   ];
 
   return (
@@ -84,7 +98,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         <nav className="flex-1 space-y-2">
-          {navItems.map((item) => {
+          {allNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.path === '/' 
               ? location.pathname === '/' 
@@ -131,9 +145,63 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {children}
       </main>
 
+      {/* Mobile Drawer Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex flex-col justify-end p-0"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <div 
+            className="glass-card rounded-t-3xl rounded-b-none border-t border-white/60 p-6 space-y-4 shadow-2xl max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200/50 pb-3">
+              <div className="flex items-center gap-2">
+                <Menu className="w-5 h-5 text-primary-500" />
+                <h3 className="font-extrabold text-slate-800 text-base">Navigation Menu</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-1.5 hover:bg-slate-200/50 rounded-full text-slate-450 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 flex-1 overflow-y-auto py-2">
+              {allNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = item.path === '/' 
+                  ? location.pathname === '/' 
+                  : location.pathname.startsWith(item.path);
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 p-3 rounded-2xl font-bold text-xs transition-all duration-150 ${
+                      isActive
+                        ? 'shadow-neu-inset bg-[#e3e6eb] text-primary-600 border border-slate-300/40'
+                        : 'bg-white/60 text-slate-600 border border-slate-200/60 hover:bg-white'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-xl flex-shrink-0 ${isActive ? 'bg-primary-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-card rounded-t-2xl rounded-b-none border-t border-white/50 flex items-center justify-around py-3 px-3 z-50 shadow-lg">
-        {navItems.map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-card rounded-t-2xl rounded-b-none border-t border-white/50 flex items-center justify-around py-2.5 px-2 z-50 shadow-lg">
+        {mobileBottomItems.map((item) => {
           const Icon = item.icon;
           const isActive = item.path === '/' 
             ? location.pathname === '/' 
@@ -143,9 +211,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-150 ${
+              className={`flex flex-col items-center gap-1 p-1.5 rounded-xl transition-all duration-150 ${
                 isActive
-                  ? 'shadow-neu-inset bg-[#e3e6eb] text-primary-600 px-3 py-1.5'
+                  ? 'shadow-neu-inset bg-[#e3e6eb] text-primary-600 px-3 py-1'
                   : 'text-slate-400 hover:text-slate-700'
               }`}
             >
@@ -154,6 +222,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Link>
           );
         })}
+
+        {/* Hamburger Menu Button */}
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(true)}
+          className={`flex flex-col items-center gap-1 p-1.5 rounded-xl transition-all duration-150 ${
+            mobileMenuOpen
+              ? 'shadow-neu-inset bg-[#e3e6eb] text-primary-600 px-3 py-1'
+              : 'text-slate-400 hover:text-slate-700'
+          }`}
+        >
+          <Menu className={`w-5 h-5 ${mobileMenuOpen ? 'text-primary-500' : 'text-slate-400'}`} />
+          <span className="text-[9px] font-semibold">More</span>
+        </button>
       </nav>
     </div>
   );
